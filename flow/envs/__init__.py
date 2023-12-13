@@ -42,4 +42,5 @@ __all__ = [
     'DesiredVelocityEnv',
     'PO_TrafficLightGridEnv',
     'GreenWaveTestEnv',
+    'CustomAccelEnv',
 ]

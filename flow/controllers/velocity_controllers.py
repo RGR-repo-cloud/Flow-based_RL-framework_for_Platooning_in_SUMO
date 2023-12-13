@@ -238,3 +238,28 @@ class PISaturation(BaseController):
         accel = (self.v_cmd - this_vel) / env.sim_step
 
         return min(accel, self.max_accel)
+    
+
+class LeaderController(BaseController):
+    
+    def __init__(self, veh_id, car_following_params):
+        """Instantiate an RL Controller."""
+        BaseController.__init__(
+            self,
+            veh_id,
+            car_following_params)
+        
+        self.period = 300
+        self.step = 0
+        self.range = 1
+        
+        
+    def get_accel(self, env):
+
+        if self.step < self.period:
+            self.step += 1
+        else:
+            self.step = 0
+
+        return np.sin((2 * np.pi) * (self.step / self.period)) * self.range
+
