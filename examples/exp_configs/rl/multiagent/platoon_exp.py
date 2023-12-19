@@ -18,13 +18,8 @@ from flow.utils.registry import make_create_env
 from ray.tune.registry import register_env
 
 # time horizon of a single rollout
-HORIZON = 3000
-# number of rollouts per training iteration
-N_ROLLOUTS = 2
-# number of parallel workers
-N_CPUS = 3
+HORIZON = 600
 
-# We place one autonomous vehicle and 13 human-driven vehicles in the network
 vehicles = VehicleParams()
 
 vehicles.add(
@@ -35,7 +30,7 @@ vehicles.add(
         speed_mode='aggressive',
     ),
     num_vehicles=1,
-    initial_speed=0,
+    initial_speed=5,
     color='grey')
 vehicles.add(
     veh_id='follower3',
@@ -45,7 +40,7 @@ vehicles.add(
         speed_mode='aggressive',
     ),
     num_vehicles=1,
-    initial_speed=0,
+    initial_speed=5,
     color='cyan')
 vehicles.add(
     veh_id='follower2',
@@ -55,7 +50,7 @@ vehicles.add(
         speed_mode='aggressive',
     ),
     num_vehicles=1,
-    initial_speed=0,
+    initial_speed=5,
     color='green')
 vehicles.add(
     veh_id='follower1',
@@ -65,7 +60,7 @@ vehicles.add(
         speed_mode='aggressive',
     ),
     num_vehicles=1,
-    initial_speed=0,
+    initial_speed=5,
     color='yellow')
 vehicles.add(
     veh_id='follower0',
@@ -75,7 +70,7 @@ vehicles.add(
         speed_mode='aggressive',
     ),
     num_vehicles=1,
-    initial_speed=0,
+    initial_speed=5,
     color='white')
 vehicles.add(
     veh_id='leader',
@@ -85,7 +80,7 @@ vehicles.add(
         speed_mode='aggressive',
     ),
     num_vehicles=1,
-    initial_speed=0,
+    initial_speed=10,
     color='red')
 
 
@@ -93,8 +88,8 @@ additional_net_params = ADDITIONAL_NET_PARAMS.copy()
 additional_net_params.update({
     "length": 1000,
     "num_vehicles":6,
-    "initial_gaps": [20, 40, 20, 15, 40],
-    "speed_limit": 5
+    "initial_gaps": [40, 40, 40, 40, 40],
+    "speed_limit": 20
 
 })
 
@@ -115,7 +110,7 @@ flow_params = dict(
     # sumo-related parameters (see flow.core.params.SumoParams)
     sim=SumoParams(
         sim_step=0.1,
-        render=True,
+        render=False,
         restart_instance=True
     ),
 
@@ -125,8 +120,7 @@ flow_params = dict(
         additional_params={
             'target_velocity': 1,
             'max_accel': 3,
-            'max_decel': 3,
-            'sort_vehicles': True
+            'max_decel': 3
         },
     ),
 
@@ -146,14 +140,6 @@ flow_params = dict(
 )
 
 
-create_env, env_name = make_create_env(params=flow_params, version=0)
-
-# Register as rllib env
-register_env(env_name, create_env)
-
-test_env = create_env()
-obs_space = test_env.observation_space
-act_space = test_env.action_space
 
 
 

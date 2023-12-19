@@ -3,7 +3,6 @@ import numpy as np
 from gym.spaces import Box
 
 from flow.core import rewards
-from flow.envs.ring.accel import AccelEnv
 from flow.envs.multiagent.base import MultiEnv
 
 
@@ -13,39 +12,40 @@ ADDITIONAL_ENV_PARAMS = {
     # maximum deceleration for autonomous vehicles, in m/s^2
     "max_decel": 3,
     # desired velocity for all vehicles in the network, in m/s
-    "target_velocity": 30,
-    'sort_vehicles': True
+    "target_velocity": 30
 }
 
 
-class PlatoonEnv(AccelEnv, MultiEnv):
-    """Adversarial multi-agent acceleration env.
+class PlatoonEnv(MultiEnv):
 
-    States
-        The observation of both the AV and adversary agent consist of the
-        velocities and absolute position of all vehicles in the network. This
-        assumes a constant number of vehicles.
+    def __init__(self, env_params, sim_params, network, simulator='traci'):
+        for p in ADDITIONAL_ENV_PARAMS.keys():
+            if p not in env_params.additional_params:
+                raise KeyError(
+                    'Environment parameter \'{}\' not supplied'.format(p))
 
-    Actions
-        * AV: The action space of the AV agent consists of a vector of bounded
-          accelerations for each autonomous vehicle. In order to ensure safety,
-          these actions are further bounded by failsafes provided by the
-          simulator at every time step.
-        * Adversary: The action space of the adversary agent consists of a
-          vector of perturbations to the accelerations issued by the AV agent.
-          These are directly added to the original accelerations by the AV
-          agent.
 
-    Rewards
-        * AV: The reward for the AV agent is equal to the mean speed of all
-          vehicles in the network.
-        * Adversary: The adversary receives a reward equal to the negative
-          reward issued to the AV agent.
+        super().__init__(env_params, sim_params, network, simulator)
 
-    Termination
-        A rollout is terminated if the time horizon is reached or if two
-        vehicles collide into one another.
-    """
+    @property
+    def action_space(self):
+        """See class definition."""
+        return Box(
+            low=-abs(self.env_params.additional_params['max_decel']),
+            high=self.env_params.additional_params['max_accel'],
+            shape=(1, ),
+            dtype=np.float32)
+
+    @property
+    def observation_space(self):
+        """See class definition."""
+        self.obs_var_labels = ['Velocity']
+        return Box(
+            low=-1000000, ###########should be made reasonable
+            high=1000000, ###########should be made reasonable
+            shape=(2, ), ##########unilateral
+            dtype=np.float32)
+
 
     def _apply_rl_actions(self, rl_actions):
         """See class definition."""
@@ -70,16 +70,22 @@ class PlatoonEnv(AccelEnv, MultiEnv):
                         action_follower4
                      ]
 
-        self.k.vehicle.apply_acceleration(ids, rl_actions)
+        self.k.vehicle.apply_acceleration(ids, rl_actions, smooth=True)
 
     def compute_reward(self, rl_actions, **kwargs):
         """Compute rewards for agents.
         """
-        reward_follower0 = -abs((self.k.vehicle.get_speed(['follower0_0'])[0]) - 0)
-        reward_follower1 = -abs((self.k.vehicle.get_speed(['follower1_0'])[0]) - 1)
-        reward_follower2 = -abs((self.k.vehicle.get_speed(['follower2_0'])[0]) - 2)
-        reward_follower3 = -abs((self.k.vehicle.get_speed(['follower3_0'])[0]) - 3)
-        reward_follower4 = -abs((self.k.vehicle.get_speed(['follower4_0'])[0]) - 4)
+        headways = self.k.vehicle.get_headway([ 'follower0_0',
+                                                'follower1_0',
+                                                'follower2_0',
+                                                'follower3_0',
+                                                'follower4_0'])
+
+        reward_follower0 = self.reward_function(headway=headways[0], tailway=headways[1])
+        reward_follower1 = self.reward_function(headway=headways[1], tailway=headways[2])
+        reward_follower2 = self.reward_function(headway=headways[2], tailway=headways[3])
+        reward_follower3 = self.reward_function(headway=headways[3], tailway=headways[4])
+        reward_follower4 = self.reward_function(headway=headways[4], tailway=20)
 
         rewards = {'follower0': reward_follower0,
                    'follower1': reward_follower1,
@@ -92,15 +98,26 @@ class PlatoonEnv(AccelEnv, MultiEnv):
         return rewards
 
     def get_state(self, **kwargs):
-        """See class definition for the state.
 
-        The adversary state and the agent state are identical.
-        """
-        state_follower0 = self.k.vehicle.get_speed(['follower0_0'])
-        state_follower1 = self.k.vehicle.get_speed(['follower1_0'])
-        state_follower2 = self.k.vehicle.get_speed(['follower2_0'])
-        state_follower3 = self.k.vehicle.get_speed(['follower3_0'])
-        state_follower4 = self.k.vehicle.get_speed(['follower4_0'])
+        speeds = self.k.vehicle.get_speed([ 'leader_0',
+                                            'follower0_0',
+                                            'follower1_0',
+                                            'follower2_0',
+                                            'follower3_0',
+                                            'follower4_0'
+                                            ])
+        headways = self.k.vehicle.get_headway([ 'follower0_0',
+                                                'follower1_0',
+                                                'follower2_0',
+                                                'follower3_0',
+                                                'follower4_0'
+                                                ])
+
+        state_follower0 = [-speeds[1] + speeds[0], headways[0]]
+        state_follower1 = [-speeds[2] + speeds[1], headways[1]]
+        state_follower2 = [-speeds[3] + speeds[2], headways[2]]
+        state_follower3 = [-speeds[4] + speeds[3], headways[3]]
+        state_follower4 = [-speeds[5] + speeds[4], headways[4]]
         
         states = {  'follower0': state_follower0,
                     'follower1': state_follower1,
@@ -109,5 +126,18 @@ class PlatoonEnv(AccelEnv, MultiEnv):
                     'follower4': state_follower4
                    }
         return states
+    
+
+    def reward_function(self, headway, tailway):
+
+
+        if headway >= 30:
+            return -10*abs(headway - 20)
+        if headway >= 10:
+            return -5*abs(headway - 20)
+        if headway >= 5:
+            return -abs(headway - 20)
+        else:
+            return -abs(pow(headway - 20, 2))
 
 

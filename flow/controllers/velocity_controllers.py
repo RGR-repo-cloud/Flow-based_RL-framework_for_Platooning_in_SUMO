@@ -256,10 +256,13 @@ class LeaderController(BaseController):
         
     def get_accel(self, env):
 
+        """
         if self.step < self.period:
             self.step += 1
         else:
             self.step = 0
 
         return np.sin((2 * np.pi) * (self.step / self.period)) * self.range
+        """
+        return 0
 
