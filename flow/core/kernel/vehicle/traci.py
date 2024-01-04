@@ -1137,7 +1137,7 @@ class TraCIVehicle(KernelVehicle):
         else:
             metric_name += '_no_noise'
         if failsafe:
-            metric_name += '_with_falsafe'
+            metric_name += '_with_failsafe'
         else:
             metric_name += '_no_failsafe'
 
@@ -1153,7 +1153,7 @@ class TraCIVehicle(KernelVehicle):
         else:
             metric_name += '_no_noise'
         if failsafe:
-            metric_name += '_with_falsafe'
+            metric_name += '_with_failsafe'
         else:
             metric_name += '_no_failsafe'
 
