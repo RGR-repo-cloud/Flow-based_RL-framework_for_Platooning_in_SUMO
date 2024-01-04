@@ -11,7 +11,7 @@ from flow.core.params import SumoParams
 from flow.core.params import SumoCarFollowingParams
 from flow.core.params import VehicleParams
 from flow.networks.platoon_highway import ADDITIONAL_NET_PARAMS
-from flow.envs.multiagent import PlatoonEnv
+from flow.envs.multiagent import BilateralPlatoonEnv, UnilateralPlatoonEnv
 from flow.networks import PlatoonHighwayNetwork
 from flow.networks import HighwayNetwork
 from flow.utils.registry import make_create_env
@@ -28,6 +28,7 @@ vehicles.add(
     routing_controller=(ContinuousRouter, {}),
     car_following_params=SumoCarFollowingParams(
         speed_mode='aggressive',
+        min_gap=0,
     ),
     num_vehicles=1,
     initial_speed=5,
@@ -38,6 +39,7 @@ vehicles.add(
     routing_controller=(ContinuousRouter, {}),
     car_following_params=SumoCarFollowingParams(
         speed_mode='aggressive',
+        min_gap=0,
     ),
     num_vehicles=1,
     initial_speed=5,
@@ -48,6 +50,7 @@ vehicles.add(
     routing_controller=(ContinuousRouter, {}),
     car_following_params=SumoCarFollowingParams(
         speed_mode='aggressive',
+        min_gap=0,
     ),
     num_vehicles=1,
     initial_speed=5,
@@ -58,6 +61,7 @@ vehicles.add(
     routing_controller=(ContinuousRouter, {}),
     car_following_params=SumoCarFollowingParams(
         speed_mode='aggressive',
+        min_gap=0,
     ),
     num_vehicles=1,
     initial_speed=5,
@@ -68,6 +72,7 @@ vehicles.add(
     routing_controller=(ContinuousRouter, {}),
     car_following_params=SumoCarFollowingParams(
         speed_mode='aggressive',
+        min_gap=0,
     ),
     num_vehicles=1,
     initial_speed=5,
@@ -99,7 +104,7 @@ flow_params = dict(
     exp_tag='multi_lane_highway',
 
     # name of the flow environment the experiment is running on
-    env_name=PlatoonEnv,
+    env_name=UnilateralPlatoonEnv,
 
     # name of the network class the experiment is running on
     network=PlatoonHighwayNetwork,
