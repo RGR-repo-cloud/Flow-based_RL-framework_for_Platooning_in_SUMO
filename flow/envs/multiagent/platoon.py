@@ -89,23 +89,39 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         """Compute rewards for agents.
         """
         headways = self.k.vehicle.get_headway(self.veh_ids[1:])
+        # in case of a collision
+        headways = [(headway if headway >= 0 else 0) for headway in headways]
 
         
-        reward_follower1 = self.reward_function(headway=headways[1])
         reward_follower0 = self.reward_function(headway=headways[0])
+        reward_follower1 = self.reward_function(headway=headways[1])
         reward_follower2 = self.reward_function(headway=headways[2])
         reward_follower3 = self.reward_function(headway=headways[3])
         reward_follower4 = self.reward_function(headway=headways[4])
 
-        if self.k.simulation.check_collision:
-            reward_follower1 *= (self.env_params.horizon - self.time_counter) 
+        if self.k.simulation.check_collision():
+            """
+            print("---------reward collision")
+            print(reward_follower0)
+            print(reward_follower1)
+            print(reward_follower2)
+            print(reward_follower3)
+            print(reward_follower4)
+            """ 
             reward_follower0 *= (self.env_params.horizon - self.time_counter)
+            reward_follower1 *= (self.env_params.horizon - self.time_counter)
             reward_follower2 *= (self.env_params.horizon - self.time_counter)
             reward_follower3 *= (self.env_params.horizon - self.time_counter)
             reward_follower4 *= (self.env_params.horizon - self.time_counter)
+            """
+            print("____________________________")
+            print(reward_follower0)
+            print(reward_follower1)
+            print(reward_follower2)
+            print(reward_follower3)
+            print(reward_follower4)
+            """
             
-
-        
         rewards = {self.veh_ids[1]: reward_follower0,
                    self.veh_ids[2]: reward_follower1,
                    self.veh_ids[3]: reward_follower2,
@@ -133,13 +149,11 @@ class UnilateralPlatoonEnv(PlatoonEnv):
                 print(speed)
                 print(previous_speeds[i])
                 raise Exception
-            
-        speeds = [(speed if speed >= 0 else 0) for speed in speeds]
         
+        # in case of a collision, just for safety
+        speeds = [(speed if speed >= 0 else previous_speeds[i]) for i, speed in enumerate(speeds)]
         headways = self.k.vehicle.get_headway(self.veh_ids[1:])
-        for headway in headways:
-            if headway <= 0:
-                print("!!!collision!!!")
+        # in case of a collision
         headways = [(headway if headway >= 0 else 0) for headway in headways]
 
         state_follower0 = [-speeds[1] + speeds[0], headways[0]]
@@ -160,14 +174,17 @@ class UnilateralPlatoonEnv(PlatoonEnv):
 
     def reward_function(self, headway):
 
+        """
         if headway >= 30:
-            return -10*abs(headway - 20)
+            return -abs(headway - 20)
         if headway >= 10:
-            return -5*abs(headway - 20)
+            return -abs(headway - 20)
         if headway >= 5:
             return -abs(headway - 20)
         else:
             return -abs(pow(headway - 20, 2))
+        """
+        return -abs(headway - 20)
 
 
 class BilateralPlatoonEnv(PlatoonEnv):

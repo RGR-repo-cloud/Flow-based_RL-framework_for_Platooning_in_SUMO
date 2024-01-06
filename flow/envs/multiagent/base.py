@@ -124,8 +124,8 @@ class MultiEnv(MultiAgentEnv, Env):
 
         for rl_id in self.k.vehicle.get_arrived_rl_ids(self.env_params.sims_per_step):
             done[rl_id] = True
-            reward[rl_id] = 0
-            states[rl_id] = np.zeros(self.observation_space.shape[0])
+            #reward[rl_id] = 0 # crashed vehicles also count as arrived vehicles but should not get a reward of zero
+            #states[rl_id] = np.zeros(self.observation_space.shape[0]) # crashed vehicles also count as arrived vehicles but the state should get manually adjusted
 
         return states, reward, done, infos
 
