@@ -68,8 +68,8 @@ def make_create_env(params, version=0, render=None):
         base_env_name = params["env_name"].__name__
 
     # deal with multiple environments being created under the same name
-    all_envs = gym.envs.registry.all()
-    env_ids = [env_spec.id for env_spec in all_envs]
+    all_envs = gym.envs.registry.keys()
+    env_ids = [env_spec for env_spec in all_envs]
     while "{}-v{}".format(base_env_name, version) in env_ids:
         version += 1
     env_name = "{}-v{}".format(base_env_name, version)

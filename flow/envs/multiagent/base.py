@@ -15,7 +15,7 @@ from flow.envs.base import Env
 from flow.utils.exceptions import FatalFlowError
 
 
-class MultiEnv(MultiAgentEnv, Env):
+class MultiEnv(Env, MultiAgentEnv):
     """Multi-agent version of base env. See parent class for info."""
 
     def step(self, rl_actions):
