@@ -422,7 +422,8 @@ class SimParams(object):
                  sight_radius=25,
                  show_radius=False,
                  pxpm=2,
-                 force_color_update=False):
+                 force_color_update=False,
+                 initial_speed_variance=0):
         """Instantiate SimParams."""
         self.sim_step = sim_step
         self.render = render
@@ -433,6 +434,7 @@ class SimParams(object):
         self.pxpm = pxpm
         self.show_radius = show_radius
         self.force_color_update = force_color_update
+        self.initial_speed_variance = initial_speed_variance
 
 
 class AimsunParams(SimParams):
@@ -609,11 +611,12 @@ class SumoParams(SimParams):
                  teleport_time=-1,
                  num_clients=1,
                  color_by_speed=False,
-                 use_ballistic=False):
+                 use_ballistic=False,
+                 initial_speed_variance=0):
         """Instantiate SumoParams."""
         super(SumoParams, self).__init__(
             sim_step, render, restart_instance, emission_path, save_render,
-            sight_radius, show_radius, pxpm, force_color_update)
+            sight_radius, show_radius, pxpm, force_color_update, initial_speed_variance)
         self.port = port
         self.lateral_resolution = lateral_resolution
         self.no_step_log = no_step_log

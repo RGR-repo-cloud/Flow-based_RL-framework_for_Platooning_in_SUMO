@@ -6,51 +6,16 @@ from flow.core.params import TrafficLightParams
 import numpy as np
 
 ADDITIONAL_NET_PARAMS = {
-    "length": 100,
+    "length": 1000,
     "num_vehicles":6,
-    "initial_gaps": [20, 20, 20, 20, 20],
+    "upper_gap_bound": 50,
+    "lower_gap_bound": 20,
     "speed_limit":1
 }
 
 
 class PlatoonHighwayNetwork(Network):
-    """Highway network class.
 
-    This network consists of `num_edges` different straight highway sections
-    with a total characteristic length and number of lanes.
-
-    Requires from net_params:
-
-    * **length** : length of the highway
-    * **lanes** : number of lanes in the highway
-    * **speed_limit** : max speed limit of the highway
-    * **num_edges** : number of edges to divide the highway into
-    * **use_ghost_edge** : whether to include a ghost edge. This edge is
-      provided a different speed limit.
-    * **ghost_speed_limit** : speed limit for the ghost edge
-    * **boundary_cell_length** : length of the downstream ghost edge with the
-      reduced speed limit
-
-    Usage
-    -----
-    >>> from flow.core.params import NetParams
-    >>> from flow.core.params import VehicleParams
-    >>> from flow.core.params import InitialConfig
-    >>> from flow.networks import HighwayNetwork
-    >>>
-    >>> network = HighwayNetwork(
-    >>>     name='highway',
-    >>>     vehicles=VehicleParams(),
-    >>>     net_params=NetParams(
-    >>>         additional_params={
-    >>>             'length': 230,
-    >>>             'lanes': 1,
-    >>>             'speed_limit': 30,
-    >>>             'num_edges': 1
-    >>>         },
-    >>>     )
-    >>> )
-    """
 
     def __init__(self,
                  name,
@@ -132,19 +97,19 @@ class PlatoonHighwayNetwork(Network):
 
         This method is just used for testing.
         """
-        initial_gaps = net_params.additional_params["initial_gaps"]
+        upper_gap_bound = net_params.additional_params["upper_gap_bound"]
+        lower_gap_bound = net_params.additional_params["lower_gap_bound"]
 
 
         start_positions, start_lanes = [], []
-        position = 40 #########quick fix
+        position = 0
 
         for i in range(num_vehicles - 1):
             start_lanes.append(0)
             start_positions.append(("highway_0", position))
-            position += initial_gaps[i]
+            position += np.random.uniform(low=lower_gap_bound, high=upper_gap_bound)
         
         start_lanes.append(0)
         start_positions.append(("highway_0", position))
-
 
         return start_positions, start_lanes

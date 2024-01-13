@@ -15,6 +15,12 @@ from flow.scenarios.merge import MergeScenario
 from flow.scenarios.multi_ring import MultiRingScenario
 from flow.scenarios.minicity import MiniCityScenario
 from flow.scenarios.highway_ramps import HighwayRampsScenario
+from flow.scenarios.platoon_scenarios import BrakingScenario
+from flow.scenarios.platoon_scenarios import AccelerationScenario
+from flow.scenarios.platoon_scenarios import AccelerationAndBrakingScenario
+from flow.scenarios.platoon_scenarios import BrakingAndAccelerationScenario
+from flow.scenarios.platoon_scenarios import SinusoidalScenario
+
 
 # deprecated classes whose names have changed
 from flow.scenarios.figure_eight import Figure8Scenario
@@ -36,6 +42,11 @@ __all__ = [
     "MultiRingScenario",
     "MiniCityScenario",
     "HighwayRampsScenario",
+    "BrakingScenario",
+    "AccelerationScenario",
+    "AccelerationAndBrakingScenario",
+    "BrakingAndAccelerationScenario",
+    "SinusoidalScenario",
     # deprecated classes
     "Figure8Scenario",
     "LoopScenario",

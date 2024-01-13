@@ -2,6 +2,8 @@
 
 from flow.controllers.base_controller import BaseController
 import numpy as np
+from enum import Enum
+from flow.scenarios.platoon_scenarios import *
 
 
 class FollowerStopper(BaseController):
@@ -244,25 +246,36 @@ class LeaderController(BaseController):
     
     def __init__(self, veh_id, car_following_params):
         """Instantiate an RL Controller."""
-        BaseController.__init__(
-            self,
-            veh_id,
-            car_following_params)
+        BaseController.__init__(self, veh_id, car_following_params)
         
-        self.period = 300
-        self.step = 0
-        self.range = 1
+        self.scenario = None
+        self.number_of_scenarios = 5
         
         
     def get_accel(self, env):
 
-        """
-        if self.step < self.period:
-            self.step += 1
-        else:
-            self.step = 0
+        step = env.time_counter
+        speed = env.k.vehicle.get_speed('leader_0')
 
-        return np.sin((2 * np.pi) * (self.step / self.period)) * self.range
-        """
-        return 0
+        if step == 1:
+            scenario = np.random.randint(low=0, high=self.number_of_scenarios)
+            match scenario:
+                case 0:
+                    self.scenario = AccelerationScenario()
+                case 1:
+                    self.scenario = BrakingScenario()
+                case 2:
+                    self.scenario = AccelerationAndBrakingScenario()
+                case 3:
+                    self.scenario = BrakingAndAccelerationScenario()
+                case 4:
+                    self.scenario = SinusoidalScenario()
+                case _:
+                    raise Exception("no valid scenario was chosen")
+            print("EpisodeScenario: " + self.scenario.name)
+
+        return self.scenario.get_accel(step, speed)
+
+    
+
 

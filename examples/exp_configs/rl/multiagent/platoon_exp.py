@@ -30,7 +30,7 @@ vehicles.add(
         min_gap=0,
     ),
     num_vehicles=1,
-    initial_speed=5,
+    initial_speed=10,
     color='grey')
 vehicles.add(
     veh_id='follower3',
@@ -41,7 +41,7 @@ vehicles.add(
         min_gap=0,
     ),
     num_vehicles=1,
-    initial_speed=5,
+    initial_speed=10,
     color='cyan')
 vehicles.add(
     veh_id='follower2',
@@ -52,7 +52,7 @@ vehicles.add(
         min_gap=0,
     ),
     num_vehicles=1,
-    initial_speed=5,
+    initial_speed=10,
     color='green')
 vehicles.add(
     veh_id='follower1',
@@ -63,7 +63,7 @@ vehicles.add(
         min_gap=0,
     ),
     num_vehicles=1,
-    initial_speed=5,
+    initial_speed=10,
     color='yellow')
 vehicles.add(
     veh_id='follower0',
@@ -74,7 +74,7 @@ vehicles.add(
         min_gap=0,
     ),
     num_vehicles=1,
-    initial_speed=5,
+    initial_speed=10,
     color='white')
 vehicles.add(
     veh_id='leader',
@@ -82,6 +82,7 @@ vehicles.add(
     routing_controller=(ContinuousRouter, {}),
     car_following_params=SumoCarFollowingParams(
         speed_mode='aggressive',
+        min_gap=0,
     ),
     num_vehicles=1,
     initial_speed=10,
@@ -90,10 +91,11 @@ vehicles.add(
 
 additional_net_params = ADDITIONAL_NET_PARAMS.copy()
 additional_net_params.update({
-    "length": 1000,
+    "length": 10000,
     "num_vehicles":6,
-    "initial_gaps": [40, 40, 40, 40, 40],
-    "speed_limit": 20
+    "upper_gap_bound":50,
+    "lower_gap_bound":25,
+    "speed_limit": 36
 
 })
 
@@ -115,7 +117,8 @@ flow_params = dict(
     sim=SumoParams(
         sim_step=0.1,
         render=False,
-        restart_instance=True
+        restart_instance=True,
+        initial_speed_variance=4
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)

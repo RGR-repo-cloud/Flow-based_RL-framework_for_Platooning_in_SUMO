@@ -89,6 +89,14 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         """Compute rewards for agents.
         """
         headways = self.k.vehicle.get_headway(self.veh_ids[1:])
+        
+        for headway in headways:
+            if headway < 0 and not self.k.simulation.check_collision():
+                print("!!!!negative headway")
+                print(self.time_counter)
+                print(headways)
+                raise Exception
+
         # in case of a collision
         headways = [(headway if headway >= 0 else 0) for headway in headways]
 
@@ -100,27 +108,12 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         reward_follower4 = self.reward_function(headway=headways[4])
 
         if self.k.simulation.check_collision():
-            """
-            print("---------reward collision")
-            print(reward_follower0)
-            print(reward_follower1)
-            print(reward_follower2)
-            print(reward_follower3)
-            print(reward_follower4)
-            """ 
+
             reward_follower0 *= (self.env_params.horizon - self.time_counter)
             reward_follower1 *= (self.env_params.horizon - self.time_counter)
             reward_follower2 *= (self.env_params.horizon - self.time_counter)
             reward_follower3 *= (self.env_params.horizon - self.time_counter)
             reward_follower4 *= (self.env_params.horizon - self.time_counter)
-            """
-            print("____________________________")
-            print(reward_follower0)
-            print(reward_follower1)
-            print(reward_follower2)
-            print(reward_follower3)
-            print(reward_follower4)
-            """
             
         rewards = {self.veh_ids[1]: reward_follower0,
                    self.veh_ids[2]: reward_follower1,
@@ -136,25 +129,48 @@ class UnilateralPlatoonEnv(PlatoonEnv):
 
         speeds = self.k.vehicle.get_speed(self.veh_ids)
         previous_speeds = self.k.vehicle.get_previous_speed(self.veh_ids)
+        # checking for crashed vehicle
+        accelerations = [(0 if not isinstance(self.k.vehicle.get_arrived_ids(), int) and veh_id in self.k.vehicle.get_arrived_ids()
+                         else self.k.vehicle.get_accel(veh_id, noise=False, failsafe=False))
+                        for veh_id in self.veh_ids]
+        headways = self.k.vehicle.get_headway(self.veh_ids[1:])
+        
+        for acceleration in accelerations:
+            if self.time_counter is not 0 and abs(acceleration) > 3.1:
+                print("!!!!!!!too high input accel")
+                print(self.time_counter)
+                print(accelerations)
+                raise Exception
+
         for i, speed in enumerate(speeds):
             if speed < 0:
                 print("!!!negative speed!!!")
+                print(self.time_counter)
+                print(speeds)
                 raise Exception
             if abs(speed - previous_speeds[i]) > 0.31 and self.time_counter is not 0:
-                print("!!!!!!!!!!!!!!to high accel!!!!!!!!!!!!!!!!!!!!")
+                print("!!!!!!!!!!!!!!too high accel!!!!!!!!!!!!!!!!!!!!")
+                print(self.time_counter)
                 print(speed - previous_speeds[i])
+                print(accelerations)
                 raise Exception
             if previous_speeds[i] is 0 and speed >= 0 and self.time_counter is not 0:
                 print("!!!faulty emergency brake!!!")
+                print(self.time_counter)
                 print(speed)
                 print(previous_speeds[i])
                 raise Exception
         
-        # in case of a collision, just for safety
-        speeds = [(speed if speed >= 0 else previous_speeds[i]) for i, speed in enumerate(speeds)]
-        headways = self.k.vehicle.get_headway(self.veh_ids[1:])
+        for headway in headways:
+            if headway < 0 and not self.k.simulation.check_collision():
+                print("!!!!negative headway")
+                print(self.time_counter)
+                print(headways)
+                raise Exception
+        
         # in case of a collision
         headways = [(headway if headway >= 0 else 0) for headway in headways]
+        speeds = [(speed if speed >= 0 else previous_speeds[i]) for i, speed in enumerate(speeds)]
 
         state_follower0 = [-speeds[1] + speeds[0], headways[0]]
         state_follower1 = [-speeds[2] + speeds[1], headways[1]]
@@ -233,11 +249,6 @@ class BilateralPlatoonEnv(PlatoonEnv):
         # if collisions occur a false headway is given
         headways = [(headway if headway >= 0 else 0) for headway in headways]
 
-        accelerations = [(self.k.vehicle.get_accel(self.veh_ids[veh], noise=False, failsafe=False) if not self.k.simulation.check_collision() else 0) 
-                          for veh in range(len(self.veh_ids))]
-
-        # if the accelerations have not been updated yet
-        accelerations = [(0 if accel==None else accel) for accel in accelerations]
 
         state_follower0 = [-speeds[1] + speeds[0], -speeds[1] + speeds[2], headways[0], headways[1], accelerations[0], accelerations[1], accelerations[2]]
         state_follower1 = [-speeds[2] + speeds[1], -speeds[2] + speeds[3], headways[1], headways[2], accelerations[1], accelerations[2], accelerations[3]]
