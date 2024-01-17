@@ -102,7 +102,7 @@ class PlatoonHighwayNetwork(Network):
 
 
         start_positions, start_lanes = [], []
-        position = 0
+        position = 5
 
         for i in range(num_vehicles - 1):
             start_lanes.append(0)

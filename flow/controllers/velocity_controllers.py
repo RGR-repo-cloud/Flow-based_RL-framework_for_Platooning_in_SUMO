@@ -249,7 +249,7 @@ class LeaderController(BaseController):
         BaseController.__init__(self, veh_id, car_following_params)
         
         self.scenario = None
-        self.number_of_scenarios = 5
+        self.number_of_scenarios = 6
         
         
     def get_accel(self, env):
@@ -270,6 +270,8 @@ class LeaderController(BaseController):
                     self.scenario = BrakingAndAccelerationScenario()
                 case 4:
                     self.scenario = SinusoidalScenario()
+                case 5:
+                    self.scenario = ConstantSpeedScenario()
                 case _:
                     raise Exception("no valid scenario was chosen")
             print("EpisodeScenario: " + self.scenario.name)

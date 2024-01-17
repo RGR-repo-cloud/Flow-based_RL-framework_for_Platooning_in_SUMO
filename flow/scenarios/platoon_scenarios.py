@@ -9,6 +9,15 @@ class BaseScenario(ABC):
         pass
 
 
+class ConstantSpeedScenario(BaseScenario):
+
+    def __init__(self):
+        self.name = 'ConstantSpeedScenario'
+
+    def get_accel(self, step, speed):
+        return 0
+    
+
 class BrakingScenario(BaseScenario):
 
     def __init__(self):

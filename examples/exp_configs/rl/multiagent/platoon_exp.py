@@ -94,7 +94,7 @@ additional_net_params.update({
     "length": 10000,
     "num_vehicles":6,
     "upper_gap_bound":50,
-    "lower_gap_bound":25,
+    "lower_gap_bound":30,
     "speed_limit": 36
 
 })
@@ -105,7 +105,7 @@ flow_params = dict(
     exp_tag='multi_lane_highway',
 
     # name of the flow environment the experiment is running on
-    env_name=UnilateralPlatoonEnv,
+    env_name=BilateralPlatoonEnv,
 
     # name of the network class the experiment is running on
     network=PlatoonHighwayNetwork,

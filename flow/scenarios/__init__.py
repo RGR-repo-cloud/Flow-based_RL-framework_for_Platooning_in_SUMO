@@ -20,6 +20,7 @@ from flow.scenarios.platoon_scenarios import AccelerationScenario
 from flow.scenarios.platoon_scenarios import AccelerationAndBrakingScenario
 from flow.scenarios.platoon_scenarios import BrakingAndAccelerationScenario
 from flow.scenarios.platoon_scenarios import SinusoidalScenario
+from flow.scenarios.platoon_scenarios import ConstantSpeedScenario
 
 
 # deprecated classes whose names have changed
@@ -47,6 +48,7 @@ __all__ = [
     "AccelerationAndBrakingScenario",
     "BrakingAndAccelerationScenario",
     "SinusoidalScenario",
+    "ConstantSpeedScenario",
     # deprecated classes
     "Figure8Scenario",
     "LoopScenario",
