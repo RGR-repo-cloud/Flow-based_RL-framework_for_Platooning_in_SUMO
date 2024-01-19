@@ -118,7 +118,9 @@ class UnilateralPlatoonEnv(PlatoonEnv):
                 print("!!!!negative headway")
                 print(self.time_counter)
                 print(headways)
+                """
                 raise Exception
+                """
             if headway == 1000:
                 print("!!!!!!default headway!!!!!!!!!")
                 print(self.time_counter)
@@ -208,7 +210,9 @@ class UnilateralPlatoonEnv(PlatoonEnv):
                 print("!!!!negative headway")
                 print(self.time_counter)
                 print(headways)
+                """
                 raise Exception
+                """
             if headway == 1000:
                 print("!!!!!!default headway!!!!!!!!!")
                 print(self.time_counter)
@@ -227,7 +231,7 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         state_follower2 = [-speeds[3] + speeds[2], gap_errors[2], accelerations[3], accelerations[2]]
         state_follower3 = [-speeds[4] + speeds[3], gap_errors[3], accelerations[4], accelerations[3]]
         state_follower4 = [-speeds[5] + speeds[4], gap_errors[4], accelerations[5], accelerations[4]]
-        
+
         states = {  self.veh_ids[1]: state_follower0,
                     self.veh_ids[2]: state_follower1,
                     self.veh_ids[3]: state_follower2,
@@ -236,8 +240,6 @@ class UnilateralPlatoonEnv(PlatoonEnv):
                    }
         
         return states
-    
-    #####get_realized_accel
     
 
     def reward_function(self, headway, speed_front, speed_self, accel, previous_accel):
@@ -312,7 +314,9 @@ class BilateralPlatoonEnv(PlatoonEnv):
                 print("!!!!negative headway")
                 print(self.time_counter)
                 print(headways)
+                """
                 raise Exception
+                """
             if headway == 1000:
                 print("!!!!!!default headway!!!!!!!!!")
                 print(self.time_counter)
@@ -396,7 +400,9 @@ class BilateralPlatoonEnv(PlatoonEnv):
                 print("!!!!negative headway")
                 print(self.time_counter)
                 print(headways)
+                """
                 raise Exception
+                """
             if headway == 1000:
                 print("!!!!!!default headway!!!!!!!!!")
                 print(self.time_counter)
@@ -441,7 +447,7 @@ class BilateralPlatoonEnv(PlatoonEnv):
         weight_a = 0.1
         weight_b = 0.1
         weight_c = 0.2
-        weight_d = 1
+        weight_d = 0.5
 
         abs_reward = -(normed_gap_error_front + 
                        (weight_a * normed_speed_error) + 
@@ -451,10 +457,10 @@ class BilateralPlatoonEnv(PlatoonEnv):
         sqr_reward = -(pow(normed_gap_error_front, 2) + 
                         (weight_a * pow(normed_speed_error, 2)) + 
                         (weight_b * pow(normed_input_penalty, 2)) +
-                        (weight_c * pow(normed_jerk ,2)) +
-                        (weight_d * normed_gap_error_rear))
+                        (weight_c * pow(normed_jerk, 2)) +
+                        (weight_d * pow(normed_gap_error_rear, 2)))
 
-        epsilon = -0.9
+        epsilon = -0.675
 
         if abs_reward < epsilon:
             return abs_reward
