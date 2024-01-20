@@ -4,6 +4,7 @@ from gym.spaces import Box
 
 from flow.core import rewards
 from flow.envs.multiagent.base import MultiEnv
+from queue import Queue
 
 
 ADDITIONAL_ENV_PARAMS = {
@@ -37,6 +38,11 @@ class PlatoonEnv(MultiEnv):
         self.previous_accels = {}
         for veh_id in self.veh_ids[1:]:
             self.previous_accels[veh_id] = 0
+
+        self.state_frame_size = 1
+        self.previous_states = {}
+        self.state_frame = {}
+
 
     @property
     def action_space(self):
@@ -80,6 +86,36 @@ class PlatoonEnv(MultiEnv):
         self.k.vehicle.apply_acceleration(self.veh_ids[1:], rl_actions, smooth=False)
 
 
+    def add_previous_state(self, state):
+        
+        for veh_id in self.veh_ids[1:]:
+            del self.previous_states[veh_id][-1]
+            self.previous_states[veh_id].insert(0, state[veh_id])
+            assert len(self.previous_states[veh_id]) == self.state_frame_size
+
+
+    def init_state_frame(self, state):
+        
+        self.previous_states = {}
+        for veh_id in self.veh_ids[1:]:
+            self.previous_states[veh_id] = []
+            for _ in range(self.state_frame_size):
+                self.previous_states[veh_id].append(state[veh_id])
+            assert len(self.previous_states[veh_id]) == self.state_frame_size
+
+    
+    def create_state_frame(self):
+
+        state_frame = {}
+        for veh_id in self.veh_ids[1:]:
+            veh_state_frame = []
+            for i in range(self.state_frame_size):
+                veh_state_frame += self.previous_states[veh_id][i]
+            state_frame[veh_id] = veh_state_frame
+        
+        return state_frame
+
+
 
 class UnilateralPlatoonEnv(PlatoonEnv):
 
@@ -97,7 +133,7 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         return Box(
             low=-1000000, ###########should be made reasonable
             high=1000000, ###########should be made reasonable
-            shape=(4, ), ##########unilateral
+            shape=(4 * self.state_frame_size, ), ##########unilateral
             dtype=np.float32)
     
 
@@ -156,6 +192,7 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         reward_follower3 = self.reward_function(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'])
         reward_follower4 = self.reward_function(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'])
 
+        """
         if self.k.simulation.check_collision():
 
             reward_follower0 *= (self.env_params.horizon - self.time_counter)
@@ -163,6 +200,7 @@ class UnilateralPlatoonEnv(PlatoonEnv):
             reward_follower2 *= (self.env_params.horizon - self.time_counter)
             reward_follower3 *= (self.env_params.horizon - self.time_counter)
             reward_follower4 *= (self.env_params.horizon - self.time_counter)
+        """
             
         rewards = {self.veh_ids[1]: reward_follower0,
                    self.veh_ids[2]: reward_follower1,
@@ -226,24 +264,27 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         # accelerations are not updated at the start
         accelerations = [0 if accelerations[i] is None else accelerations[i] for i in range(len(self.veh_ids))]
 
-        state_follower0 = [-speeds[1] + speeds[0], gap_errors[0], accelerations[1], self.k.vehicle.get_realized_accel('leader_0')] # input accel differs from actual accel for leader
-        state_follower1 = [-speeds[2] + speeds[1], gap_errors[1], accelerations[2], accelerations[1]]
-        state_follower2 = [-speeds[3] + speeds[2], gap_errors[2], accelerations[3], accelerations[2]]
-        state_follower3 = [-speeds[4] + speeds[3], gap_errors[3], accelerations[4], accelerations[3]]
-        state_follower4 = [-speeds[5] + speeds[4], gap_errors[4], accelerations[5], accelerations[4]]
-
-        states = {  self.veh_ids[1]: state_follower0,
-                    self.veh_ids[2]: state_follower1,
-                    self.veh_ids[3]: state_follower2,
-                    self.veh_ids[4]: state_follower3,
-                    self.veh_ids[5]: state_follower4
-                   }
+        states = {
+            self.veh_ids[1]: [-speeds[1] + speeds[0], gap_errors[0], accelerations[1], self.k.vehicle.get_realized_accel('leader_0')], # input accel differs from actual accel for leader
+            self.veh_ids[2]: [-speeds[2] + speeds[1], gap_errors[1], accelerations[2], accelerations[1]],
+            self.veh_ids[3]: [-speeds[3] + speeds[2], gap_errors[2], accelerations[3], accelerations[2]],
+            self.veh_ids[4]: [-speeds[4] + speeds[3], gap_errors[3], accelerations[4], accelerations[3]],
+            self.veh_ids[5]: [-speeds[5] + speeds[4], gap_errors[4], accelerations[5], accelerations[4]]
+        }
         
+        if self.state_frame_size > 1:
+            if self.time_counter == 0:
+                self.init_state_frame(states)
+            else:
+                self.add_previous_state(states)
+            states = self.create_state_frame()
+
         return states
     
 
     def reward_function(self, headway, speed_front, speed_self, accel, previous_accel):
-
+        
+        max_err = 1000
         max_gap_error = 15
         max_speed_error = 10
         max_accel = 3
@@ -269,9 +310,14 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         epsilon = -0.4483
 
         if abs_reward < epsilon:
-            return abs_reward
+            neg_reward = abs_reward
         else:
-            return sqr_reward
+            neg_reward = sqr_reward
+
+        if neg_reward < -max_err:
+            raise Exception("neq_reward too big")
+
+        return max_err + neg_reward
         
     
     def reward_function1(self, headway):
@@ -294,7 +340,7 @@ class BilateralPlatoonEnv(PlatoonEnv):
         return Box(
             low=-1000000, ###########should be made reasonable
             high=1000000, ###########should be made reasonable
-            shape=(7, ), ##########unilateral
+            shape=(7 * self.state_frame_size, ), ##########unilateral
             dtype=np.float32)
     
 
@@ -345,7 +391,8 @@ class BilateralPlatoonEnv(PlatoonEnv):
         reward_follower2 = self.reward_function(headways[2], headways[3], speeds[2], speeds[3], speeds[4], accelerations[3], self.previous_accels['follower2_0'])
         reward_follower3 = self.reward_function(headways[3], headways[4], speeds[3], speeds[4], speeds[5], accelerations[4], self.previous_accels['follower3_0'])
         reward_follower4 = self.reward_function(headways[4], self.standstill_distance, speeds[4], speeds[5], 0, accelerations[5], self.previous_accels['follower4_0'])
-
+        
+        """
         if self.k.simulation.check_collision():
 
             reward_follower0 *= (self.env_params.horizon - self.time_counter)
@@ -353,6 +400,7 @@ class BilateralPlatoonEnv(PlatoonEnv):
             reward_follower2 *= (self.env_params.horizon - self.time_counter)
             reward_follower3 *= (self.env_params.horizon - self.time_counter)
             reward_follower4 *= (self.env_params.horizon - self.time_counter)
+        """
             
         rewards = {self.veh_ids[1]: reward_follower0,
                    self.veh_ids[2]: reward_follower1,
@@ -416,24 +464,27 @@ class BilateralPlatoonEnv(PlatoonEnv):
         # accelerations are not updated at the start
         accelerations = [0 if accelerations[i] is None else accelerations[i] for i in range(len(self.veh_ids))]
 
-        state_follower0 = [-speeds[1] + speeds[0], -speeds[1] + speeds[2], gap_errors[0], gap_errors[1], accelerations[1], self.k.vehicle.get_realized_accel('leader_0'), accelerations[2]] # input accel differs from actual accel for leader
-        state_follower1 = [-speeds[2] + speeds[1], -speeds[2] + speeds[3], gap_errors[1], gap_errors[2], accelerations[2], accelerations[1], accelerations[3]]
-        state_follower2 = [-speeds[3] + speeds[2], -speeds[3] + speeds[4], gap_errors[2], gap_errors[3], accelerations[3], accelerations[2], accelerations[4]]
-        state_follower3 = [-speeds[4] + speeds[3], -speeds[4] + speeds[5], gap_errors[3], gap_errors[4], accelerations[4], accelerations[3], accelerations[5]]
-        state_follower4 = [-speeds[5] + speeds[4], 0, gap_errors[4], 0, accelerations[5], accelerations[4], 0] # acceleration of successor should be adapted
+        states = {
+            self.veh_ids[1]: [-speeds[1] + speeds[0], -speeds[1] + speeds[2], gap_errors[0], gap_errors[1], accelerations[1], self.k.vehicle.get_realized_accel('leader_0'), accelerations[2]], # input accel differs from actual accel for leader
+            self.veh_ids[2]: [-speeds[2] + speeds[1], -speeds[2] + speeds[3], gap_errors[1], gap_errors[2], accelerations[2], accelerations[1], accelerations[3]],
+            self.veh_ids[3]: [-speeds[3] + speeds[2], -speeds[3] + speeds[4], gap_errors[2], gap_errors[3], accelerations[3], accelerations[2], accelerations[4]],
+            self.veh_ids[4]: [-speeds[4] + speeds[3], -speeds[4] + speeds[5], gap_errors[3], gap_errors[4], accelerations[4], accelerations[3], accelerations[5]],
+            self.veh_ids[5]: [-speeds[5] + speeds[4], 0, gap_errors[4], 0, accelerations[5], accelerations[4], 0] # acceleration of successor should be adapted
+        }
         
-        states = {  self.veh_ids[1]: state_follower0,
-                    self.veh_ids[2]: state_follower1,
-                    self.veh_ids[3]: state_follower2,
-                    self.veh_ids[4]: state_follower3,
-                    self.veh_ids[5]: state_follower4
-                   }
-        
+        if self.state_frame_size > 1:
+            if self.time_counter == 0:
+                self.init_state_frame(states)
+            else:
+                self.add_previous_state(states)
+            states = self.create_state_frame()
+
         return states
     
 
     def reward_function(self, headway_front, headway_rear, speed_front, speed_self, speed_rear, accel, previous_accel):
 
+        max_err = 1000
         max_gap_error = 15
         max_speed_error = 10
         max_accel = 3
@@ -463,8 +514,13 @@ class BilateralPlatoonEnv(PlatoonEnv):
         epsilon = -0.675
 
         if abs_reward < epsilon:
-            return abs_reward
+            neg_reward = abs_reward
         else:
-            return sqr_reward
+            neg_reward = sqr_reward
+        
+        if neg_reward < -max_err:
+            raise Exception("neq_reward too big")
+
+        return max_err + neg_reward
 
 
