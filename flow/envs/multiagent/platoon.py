@@ -175,22 +175,28 @@ class UnilateralPlatoonEnv(PlatoonEnv):
                 print(speed - previous_speeds[i])
                 print(accelerations)
                 raise Exception
+            """
             if previous_speeds[i] == 0 and speed >= 0 and self.time_counter != 0:
                 print("!!!faulty emergency brake!!!")
                 print(self.time_counter)
                 print(speed)
                 print(previous_speeds[i])
                 raise Exception
+            """
 
         # in case of a collision
         headways = [(headway if headway >= 0 else 0) for headway in headways]
 
+        crashed = {}
+        for veh_id in self.veh_ids[1:]:
+            crashed[veh_id] = veh_id in self.k.vehicle.get_arrived_rl_ids(self.env_params.sims_per_step)
+
         
-        reward_follower0 = self.reward_function(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels['follower0_0'])
-        reward_follower1 = self.reward_function(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels['follower1_0'])
-        reward_follower2 = self.reward_function(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels['follower2_0'])
-        reward_follower3 = self.reward_function(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'])
-        reward_follower4 = self.reward_function(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'])
+        reward_follower0 = self.reward_function(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'])
+        reward_follower1 = self.reward_function(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'])
+        reward_follower2 = self.reward_function(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'])
+        reward_follower3 = self.reward_function(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'])
+        reward_follower4 = self.reward_function(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'])
 
         """
         if self.k.simulation.check_collision():
@@ -282,9 +288,9 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         return states
     
 
-    def reward_function(self, headway, speed_front, speed_self, accel, previous_accel):
+    def reward_function(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
         
-        max_err = 1000
+        max_err = 100
         max_gap_error = 15
         max_speed_error = 10
         max_accel = 3
@@ -315,8 +321,16 @@ class UnilateralPlatoonEnv(PlatoonEnv):
             neg_reward = sqr_reward
 
         if neg_reward < -max_err:
-            raise Exception("neq_reward too big")
-
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            print(neg_reward)
+        
+        if crashed:
+            print("!!!!!!!!!!!!!crashed!!!!!!!!!!!!!!!!")
+            return -100
+        
+        if speed_self == 0 and speed_front > 0:
+            return 0
+        
         return max_err + neg_reward
         
     

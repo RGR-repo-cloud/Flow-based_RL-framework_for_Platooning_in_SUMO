@@ -105,7 +105,7 @@ flow_params = dict(
     exp_tag='multi_lane_highway',
 
     # name of the flow environment the experiment is running on
-    env_name=BilateralPlatoonEnv,
+    env_name=UnilateralPlatoonEnv,
 
     # name of the network class the experiment is running on
     network=PlatoonHighwayNetwork,
