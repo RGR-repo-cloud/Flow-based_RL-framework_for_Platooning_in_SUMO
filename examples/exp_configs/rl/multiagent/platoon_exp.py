@@ -10,7 +10,7 @@ from flow.core.params import SumoParams
 from flow.core.params import SumoCarFollowingParams
 from flow.core.params import VehicleParams
 from flow.networks.platoon_highway import ADDITIONAL_NET_PARAMS
-from flow.envs.multiagent import BilateralPlatoonEnv, UnilateralPlatoonEnv
+from flow.envs.multiagent import BilateralPlatoonEnv, UnilateralPlatoonEnv, FlatbedEnv
 from flow.networks import PlatoonHighwayNetwork
 from flow.networks import HighwayNetwork
 from flow.utils.registry import make_create_env
@@ -105,7 +105,7 @@ flow_params = dict(
     exp_tag='multi_lane_highway',
 
     # name of the flow environment the experiment is running on
-    env_name=UnilateralPlatoonEnv,
+    env_name=BilateralPlatoonEnv,
 
     # name of the network class the experiment is running on
     network=PlatoonHighwayNetwork,
