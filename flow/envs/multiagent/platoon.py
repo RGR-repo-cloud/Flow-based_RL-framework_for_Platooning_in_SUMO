@@ -5,6 +5,7 @@ from gym.spaces import Box
 from flow.core import rewards
 from flow.envs.multiagent.base import MultiEnv
 from queue import Queue
+import math
 
 
 ADDITIONAL_ENV_PARAMS = {
@@ -284,6 +285,7 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         max_gap_error = 15
         max_speed_error = 10
         max_accel = 3
+        reward_scale = 0.01
 
         gap_error = (self.standstill_distance + speed_self * self.time_gap) - headway
         speed_error = speed_front - speed_self
@@ -313,24 +315,60 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         if abs_reward < epsilon:
             neg_reward = abs_reward
         else:
-            neg_reward = sqr_reward
+            neg_reward = reward_scale * sqr_reward
 
-        if neg_reward < -max_err:
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            print(neg_reward)
-        
         if crashed:
-            print("!!!!!!!!!!!!!crashed!!!!!!!!!!!!!!!!")
             return -1
         
-        if speed_self == 0 and speed_front > 0:
-            return 0
+        if neg_reward >= -1:
+            return neg_reward + 1
         
-        return (neg_reward + max_err) / max_err
+        return self.custom_sigmoid(neg_reward + 1)
         
     
-    def reward_function1(self, headway):
-        return -abs(headway - 20)
+    def custom_sigmoid(self, x):
+        return 2 / (1 + math.exp(-x)) - 1
+    
+
+    def reward_function_2(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
+        
+        max_err = 100
+        max_gap_error = 15
+        max_speed_error = 10
+        max_accel = 3
+        reward_scale = 0.01
+
+        gap_error = (self.standstill_distance + speed_self * self.time_gap) - headway
+        speed_error = speed_front - speed_self
+        jerk = accel - previous_accel
+
+        normed_gap_error = abs(gap_error / max_gap_error)
+        normed_speed_error = abs(speed_error / max_speed_error)
+        normed_input_penalty = abs((accel / max_accel))
+        normed_jerk = abs(jerk / (2 * max_accel))
+
+
+        weight_a = 0.1
+        weight_b = 0.1
+        weight_c = 0.2
+
+        abs_reward = -(normed_gap_error + 
+                       (weight_a * normed_speed_error) + 
+                       (weight_b * normed_input_penalty) + 
+                       (weight_c * normed_jerk))
+        sqr_reward = -(pow(gap_error, 2) + 
+                        (weight_a * pow(speed_error, 2)) + 
+                        (weight_b * pow(accel, 2)) +
+                        (weight_c * pow(jerk, 2)))
+
+        epsilon = -0.4483
+
+        if abs_reward < epsilon:
+            neg_reward = abs_reward
+        else:
+            neg_reward = reward_scale * sqr_reward
+        
+        return neg_reward
     
 
 
