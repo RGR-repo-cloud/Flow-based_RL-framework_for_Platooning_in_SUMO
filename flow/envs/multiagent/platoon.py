@@ -279,7 +279,7 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         return states
     
 
-    def reward_function(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
+    def reward_function_2(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
         
         max_err = 100
         max_gap_error = 15
@@ -330,7 +330,7 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         return 2 / (1 + math.exp(-x)) - 1
     
 
-    def reward_function_2(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
+    def reward_function(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
         
         max_err = 100
         max_gap_error = 15
@@ -369,6 +369,47 @@ class UnilateralPlatoonEnv(PlatoonEnv):
             neg_reward = reward_scale * sqr_reward
         
         return neg_reward
+    
+
+    def reward_function_3(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
+        
+        max_err = 100
+        max_gap_error = 15
+        max_speed_error = 10
+        max_accel = 3
+        reward_scale = 0.01
+
+        gap_error = (self.standstill_distance + speed_self * self.time_gap) - headway
+        speed_error = speed_front - speed_self
+        jerk = accel - previous_accel
+
+        normed_gap_error = abs(gap_error / max_gap_error)
+        normed_speed_error = abs(speed_error / max_speed_error)
+        normed_input_penalty = abs((accel / max_accel))
+        normed_jerk = abs(jerk / (2 * max_accel))
+
+
+        weight_a = 0.1
+        weight_b = 0.1
+        weight_c = 0.2
+
+        abs_reward = -(normed_gap_error + 
+                       (weight_a * normed_speed_error) + 
+                       (weight_b * normed_input_penalty) + 
+                       (weight_c * normed_jerk))
+        sqr_reward = -(pow(gap_error, 2) + 
+                        (weight_a * pow(speed_error, 2)) + 
+                        (weight_b * pow(accel, 2)) +
+                        (weight_c * pow(jerk, 2)))
+
+        epsilon = -0.4483
+
+        if abs_reward < epsilon:
+            neg_reward = abs_reward
+        else:
+            neg_reward = reward_scale * sqr_reward
+        
+        return (neg_reward + max_err) / max_err
     
 
 
