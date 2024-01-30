@@ -10,7 +10,8 @@ ADDITIONAL_NET_PARAMS = {
     "num_vehicles":6,
     "upper_gap_bound": 50,
     "lower_gap_bound": 20,
-    "speed_limit":1
+    "speed_limit":36,
+    "default_gaps": [30, 30, 30, 30, 30]
 }
 
 
@@ -93,12 +94,11 @@ class PlatoonHighwayNetwork(Network):
 
     @staticmethod
     def gen_custom_start_pos(cls, net_params, initial_config, num_vehicles):
-        """Generate a user defined set of starting positions.
+        """Generate a user defined set of starting positions."""
 
-        This method is just used for testing.
-        """
         upper_gap_bound = net_params.additional_params["upper_gap_bound"]
         lower_gap_bound = net_params.additional_params["lower_gap_bound"]
+        default_gaps = net_params.additional_params["default_gaps"]
 
 
         start_positions, start_lanes = [], []
@@ -107,7 +107,11 @@ class PlatoonHighwayNetwork(Network):
         for i in range(num_vehicles - 1):
             start_lanes.append(0)
             start_positions.append(("highway_0", position))
-            position += np.random.uniform(low=lower_gap_bound, high=upper_gap_bound)
+            if cls.network.randomized_initial_positions:
+                gap = np.random.uniform(low=lower_gap_bound, high=upper_gap_bound)
+            else:
+                gap = default_gaps[i]
+            position += gap
         
         start_lanes.append(0)
         start_positions.append(("highway_0", position))

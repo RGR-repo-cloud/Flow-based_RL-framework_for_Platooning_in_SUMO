@@ -19,6 +19,8 @@ from ray.tune.registry import register_env
 # time horizon of a single rollout
 HORIZON = 600
 
+seed = 0
+
 vehicles = VehicleParams()
 
 vehicles.add(
@@ -30,7 +32,7 @@ vehicles.add(
         min_gap=0,
     ),
     num_vehicles=1,
-    initial_speed=10,
+    initial_speed=12,
     color='grey')
 vehicles.add(
     veh_id='follower3',
@@ -41,7 +43,7 @@ vehicles.add(
         min_gap=0,
     ),
     num_vehicles=1,
-    initial_speed=10,
+    initial_speed=12,
     color='cyan')
 vehicles.add(
     veh_id='follower2',
@@ -52,7 +54,7 @@ vehicles.add(
         min_gap=0,
     ),
     num_vehicles=1,
-    initial_speed=10,
+    initial_speed=12,
     color='green')
 vehicles.add(
     veh_id='follower1',
@@ -63,7 +65,7 @@ vehicles.add(
         min_gap=0,
     ),
     num_vehicles=1,
-    initial_speed=10,
+    initial_speed=12,
     color='yellow')
 vehicles.add(
     veh_id='follower0',
@@ -74,7 +76,7 @@ vehicles.add(
         min_gap=0,
     ),
     num_vehicles=1,
-    initial_speed=10,
+    initial_speed=12,
     color='white')
 vehicles.add(
     veh_id='leader',
@@ -85,7 +87,7 @@ vehicles.add(
         min_gap=0,
     ),
     num_vehicles=1,
-    initial_speed=10,
+    initial_speed=12,
     color='red')
 
 
@@ -95,7 +97,8 @@ additional_net_params.update({
     "num_vehicles":6,
     "upper_gap_bound":50,
     "lower_gap_bound":30,
-    "speed_limit": 36
+    "speed_limit": 36,
+    "default_gaps": [30, 30, 30, 30, 30]
 
 })
 
@@ -118,16 +121,17 @@ flow_params = dict(
         sim_step=0.1,
         render=False,
         restart_instance=True,
-        initial_speed_variance=4
+        initial_speed_variance=4,
+        seed=seed
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
         horizon=HORIZON,
         additional_params={
-            'target_velocity': 1,
             'max_accel': 3,
-            'max_decel': 3
+            'max_decel': 3,
+            'num_scenarios':6
         },
     ),
 

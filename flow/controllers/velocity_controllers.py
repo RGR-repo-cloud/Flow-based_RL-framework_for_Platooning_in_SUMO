@@ -249,32 +249,59 @@ class LeaderController(BaseController):
         BaseController.__init__(self, veh_id, car_following_params)
         
         self.scenario = None
-        self.number_of_scenarios = 6
         
         
     def get_accel(self, env):
 
         step = env.time_counter
         speed = env.k.vehicle.get_speed('leader_0')
+        randomized = env.mode == 'train'
+        next_scenario = env.scenario_tracker
+        number_of_scenarios = env.env_params.additional_params['num_scenarios']
 
         if step == 1:
-            scenario = np.random.randint(low=0, high=self.number_of_scenarios)
-            match scenario:
-                case 0:
-                    self.scenario = AccelerationScenario()
-                case 1:
-                    self.scenario = BrakingScenario()
-                case 2:
-                    self.scenario = AccelerationAndBrakingScenario()
-                case 3:
-                    self.scenario = BrakingAndAccelerationScenario()
-                case 4:
-                    self.scenario = SinusoidalScenario()
-                case 5:
-                    self.scenario = ConstantSpeedScenario()
-                case _:
-                    raise Exception("no valid scenario was chosen")
-            print("EpisodeScenario: " + self.scenario.name)
+
+                if randomized:
+                    scenario = np.random.randint(low=0, high=number_of_scenarios)
+                else:
+                    scenario = next_scenario
+
+                match scenario:
+                    case 0:
+                        if randomized:
+                            self.scenario = RandomizedAccelerationScenario()
+                        else:
+                            self.scenario = StaticAccelerationScenario()
+                    case 1:
+                        if randomized:
+                            self.scenario = RandomizedBrakingScenario()
+                        else:
+                            self.scenario = StaticBrakingScenario()
+                    case 2:
+                        if randomized:
+                            self.scenario = RandomizedAccelerationAndBrakingScenario()
+                        else:
+                            self.scenario = StaticAccelerationAndBrakingScenario()
+                    case 3:
+                        if randomized:
+                            self.scenario = RandomizedBrakingAndAccelerationScenario()
+                        else:
+                            self.scenario = StaticBrakingAndAccelerationScenario()
+                    case 4:
+                        if randomized:
+                            self.scenario = RandomizedSinusoidalScenario()
+                        else:
+                            self.scenario = StaticSinusoidalScenario()
+                    case 5:
+                        if randomized:
+                            self.scenario = RandomizedSpeedScenario()
+                        else:
+                            self.scenario = StaticSpeedScenario()
+
+                    case _:
+                        raise Exception("no valid scenario was chosen")
+                print("EpisodeScenario: " + self.scenario.name)
+                
 
         return self.scenario.get_accel(step, speed)
 

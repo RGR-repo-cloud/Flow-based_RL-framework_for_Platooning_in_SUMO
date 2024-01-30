@@ -191,6 +191,9 @@ class Env(gym.Env, metaclass=ABCMeta):
         self.k.vehicle.kernel_api = self.k.kernel_api
         self.k.vehicle.master_kernel = self.k
 
+        self.mode = 'train'
+        self.scenario_tracker = 0
+
         self.setup_initial_state()
 
         # use pyglet to render the simulation
@@ -228,6 +231,23 @@ class Env(gym.Env, metaclass=ABCMeta):
             raise FatalFlowError(
                 'Mode %s is not supported!' % self.sim_params.render)
         atexit.register(self.terminate)
+
+
+    def set_mode(self, mode):
+        assert(mode in ['train', 'eval'])
+        self.mode = mode
+        
+        if self.mode == 'train':
+            self.k.vehicle.set_randomized_initial_speed(True)
+            self.network.set_randomized_initial_positions(True)
+        else:
+            self.k.vehicle.set_randomized_initial_speed(False)
+            self.network.set_randomized_initial_positions(False)
+
+    
+    def set_scenario(self, scenario_num):
+        self.scenario_tracker = scenario_num
+
 
     def restart_simulation(self, sim_params, render=None):
         """Restart an already initialized simulation instance.

@@ -15,12 +15,20 @@ from flow.scenarios.merge import MergeScenario
 from flow.scenarios.multi_ring import MultiRingScenario
 from flow.scenarios.minicity import MiniCityScenario
 from flow.scenarios.highway_ramps import HighwayRampsScenario
-from flow.scenarios.platoon_scenarios import BrakingScenario
-from flow.scenarios.platoon_scenarios import AccelerationScenario
-from flow.scenarios.platoon_scenarios import AccelerationAndBrakingScenario
-from flow.scenarios.platoon_scenarios import BrakingAndAccelerationScenario
-from flow.scenarios.platoon_scenarios import SinusoidalScenario
-from flow.scenarios.platoon_scenarios import ConstantSpeedScenario
+
+from flow.scenarios.platoon_scenarios import RandomizedBrakingScenario
+from flow.scenarios.platoon_scenarios import RandomizedAccelerationScenario
+from flow.scenarios.platoon_scenarios import RandomizedAccelerationAndBrakingScenario
+from flow.scenarios.platoon_scenarios import RandomizedBrakingAndAccelerationScenario
+from flow.scenarios.platoon_scenarios import RandomizedSinusoidalScenario
+from flow.scenarios.platoon_scenarios import RandomizedSpeedScenario
+
+from flow.scenarios.platoon_scenarios import StaticBrakingScenario
+from flow.scenarios.platoon_scenarios import StaticAccelerationScenario
+from flow.scenarios.platoon_scenarios import StaticAccelerationAndBrakingScenario
+from flow.scenarios.platoon_scenarios import StaticBrakingAndAccelerationScenario
+from flow.scenarios.platoon_scenarios import StaticSinusoidalScenario
+from flow.scenarios.platoon_scenarios import StaticSpeedScenario
 
 
 # deprecated classes whose names have changed

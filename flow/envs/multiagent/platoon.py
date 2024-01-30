@@ -13,9 +13,9 @@ ADDITIONAL_ENV_PARAMS = {
     "max_accel": 3,
     # maximum deceleration for autonomous vehicles, in m/s^2
     "max_decel": 3,
-    # desired velocity for all vehicles in the network, in m/s
-    "target_velocity": 30
-}
+    # number of scenarios
+    "num_scenarios": 1
+    }
 
 
 class PlatoonEnv(MultiEnv):
@@ -275,13 +275,13 @@ class UnilateralPlatoonEnv(PlatoonEnv):
             else:
                 self.add_previous_state(states)
             states = self.create_state_frame()
+    
 
         return states
     
 
     def reward_function_2(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
         
-        max_err = 100
         max_gap_error = 15
         max_speed_error = 10
         max_accel = 3
@@ -332,7 +332,6 @@ class UnilateralPlatoonEnv(PlatoonEnv):
 
     def reward_function(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
         
-        max_err = 100
         max_gap_error = 15
         max_speed_error = 10
         max_accel = 3

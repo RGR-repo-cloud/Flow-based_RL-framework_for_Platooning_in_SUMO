@@ -89,7 +89,12 @@ class TraCIVehicle(KernelVehicle):
         self.previous_speeds = {}
 
         # introduces stochasticity into initial_speeds
+        self.randomized_initial_speed = False
         self.initial_speed_variance = sim_params.initial_speed_variance
+
+
+    def set_randomized_initial_speed(self, randomized_initial_speed):
+        self.randomized_initial_speed = randomized_initial_speed
 
     def initialize(self, vehicles):
         """Initialize vehicle state information.
@@ -115,7 +120,12 @@ class TraCIVehicle(KernelVehicle):
                 veh_id = '{}_{}'.format(typ['veh_id'], i)
                 self.__vehicles[veh_id] = dict()
                 self.__vehicles[veh_id]['type'] = typ['veh_id']
-                self.__vehicles[veh_id]['initial_speed'] = typ['initial_speed'] + np.random.uniform(low=0, high=self.initial_speed_variance)
+
+                if self.randomized_initial_speed:
+                    self.__vehicles[veh_id]['initial_speed'] = typ['initial_speed'] + np.random.uniform(low=-self.initial_speed_variance/2, high=self.initial_speed_variance/2)
+                else:
+                    self.__vehicles[veh_id]['initial_speed'] = typ['initial_speed']
+                
                 self.num_vehicles += 1
                 if typ['acceleration_controller'][0] == RLController:
                     self.num_rl_vehicles += 1

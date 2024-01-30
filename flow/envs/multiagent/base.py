@@ -178,6 +178,9 @@ class MultiEnv(Env, MultiAgentEnv):
 
             self.k.vehicle = deepcopy(self.initial_vehicles)
             self.k.vehicle.master_kernel = self.k
+
+            self.set_mode(self.mode)
+
             # restart the sumo instance
             self.restart_simulation(self.sim_params)
 
