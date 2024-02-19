@@ -7,7 +7,6 @@ import atexit
 import time
 import traceback
 import numpy as np
-import random
 import shutil
 import subprocess
 from flow.renderer.pyglet_renderer import PygletRenderer as Renderer
@@ -158,6 +157,11 @@ class Env(gym.Env, metaclass=ABCMeta):
         # create the Flow kernel
         self.k = Kernel(simulator=self.simulator,
                         sim_params=self.sim_params)
+        
+        # remove randomization dependencies between episodes
+        self.episode_randomizer = np.random.default_rng(seed=self.sim_params.seed)
+        self.randomizer = np.random.default_rng(seed = self.episode_randomizer.integers(1e6))
+        self.set_randomizer()
 
         # use the network class's network parameters to generate the necessary
         # network components within the network kernel
@@ -232,6 +236,9 @@ class Env(gym.Env, metaclass=ABCMeta):
                 'Mode %s is not supported!' % self.sim_params.render)
         atexit.register(self.terminate)
 
+    def set_randomizer(self):
+        self.k.network.set_randomizer(self.randomizer)
+        self.k.vehicle.set_randomizer(self.randomizer)
 
     def set_mode(self, mode):
         assert(mode in ['train', 'eval'])
@@ -239,10 +246,10 @@ class Env(gym.Env, metaclass=ABCMeta):
         
         if self.mode == 'train':
             self.k.vehicle.set_randomized_initial_speed(True)
-            self.network.set_randomized_initial_positions(True)
+            self.k.network.set_randomized_initial_positions(True)
         else:
             self.k.vehicle.set_randomized_initial_speed(False)
-            self.network.set_randomized_initial_positions(False)
+            self.k.network.set_randomized_initial_positions(False)
 
     
     def set_scenario(self, scenario_num):
@@ -295,7 +302,7 @@ class Env(gym.Env, metaclass=ABCMeta):
         """
         # determine whether to shuffle the vehicles
         if self.initial_config.shuffle:
-            random.shuffle(self.initial_ids)
+            self.randomizer.shuffle(self.initial_ids)
 
         # generate starting position for vehicles in the network
         start_pos, start_lanes = self.k.network.generate_starting_positions(
@@ -451,6 +458,9 @@ class Env(gym.Env, metaclass=ABCMeta):
         # reset the time counter
         self.time_counter = 0
 
+        # reset randomizer
+        self.randomizer = np.random.default_rng(seed = self.episode_randomizer.integers(1e6))
+
         # Now that we've passed the possibly fake init steps some rl libraries
         # do, we can feel free to actually render things
         if self.should_render:
@@ -477,10 +487,14 @@ class Env(gym.Env, metaclass=ABCMeta):
                 (self.step_counter > 2e6 and self.simulator != 'aimsun'):
             self.step_counter = 0
             # issue a random seed to induce randomness into the next rollout
-            self.sim_params.seed = random.randint(0, 1e5)
+            self.sim_params.seed = self.randomizer.integers(0, 1e5)
 
             self.k.vehicle = deepcopy(self.initial_vehicles)
             self.k.vehicle.master_kernel = self.k
+
+            self.set_mode(self.mode)
+            self.set_randomizer()
+
             # restart the sumo instance
             self.restart_simulation(self.sim_params)
 

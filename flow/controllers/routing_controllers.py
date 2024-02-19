@@ -1,5 +1,4 @@
 """Contains a list of custom routing controllers."""
-import random
 import numpy as np
 
 from flow.controllers.base_routing_controller import BaseRouter
@@ -33,7 +32,7 @@ class ContinuousRouter(BaseRouter):
             # the given route can be chosen
             num_routes = len(env.available_routes[edge])
             frac = [val[1] for val in env.available_routes[edge]]
-            route_id = np.random.choice(
+            route_id = env.randomizer.choice(
                 [i for i in range(num_routes)], size=1, p=frac)[0]
 
             # pass the chosen route

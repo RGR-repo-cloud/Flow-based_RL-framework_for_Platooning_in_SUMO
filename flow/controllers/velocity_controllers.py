@@ -262,39 +262,39 @@ class LeaderController(BaseController):
         if step == 1:
 
                 if randomized:
-                    scenario = np.random.randint(low=0, high=number_of_scenarios)
+                    scenario = env.randomizer.integers(low=0, high=number_of_scenarios)
                 else:
                     scenario = next_scenario
 
                 match scenario:
                     case 0:
                         if randomized:
-                            self.scenario = RandomizedAccelerationScenario()
+                            self.scenario = RandomizedAccelerationScenario(env.randomizer)
                         else:
                             self.scenario = StaticAccelerationScenario()
                     case 1:
                         if randomized:
-                            self.scenario = RandomizedBrakingScenario()
+                            self.scenario = RandomizedBrakingScenario(env.randomizer)
                         else:
                             self.scenario = StaticBrakingScenario()
                     case 2:
                         if randomized:
-                            self.scenario = RandomizedAccelerationAndBrakingScenario()
+                            self.scenario = RandomizedAccelerationAndBrakingScenario(env.randomizer)
                         else:
                             self.scenario = StaticAccelerationAndBrakingScenario()
                     case 3:
                         if randomized:
-                            self.scenario = RandomizedBrakingAndAccelerationScenario()
+                            self.scenario = RandomizedBrakingAndAccelerationScenario(env.randomizer)
                         else:
                             self.scenario = StaticBrakingAndAccelerationScenario()
                     case 4:
                         if randomized:
-                            self.scenario = RandomizedSinusoidalScenario()
+                            self.scenario = RandomizedSinusoidalScenario(env.randomizer)
                         else:
                             self.scenario = StaticSinusoidalScenario()
                     case 5:
                         if randomized:
-                            self.scenario = RandomizedSpeedScenario()
+                            self.scenario = RandomizedSpeedScenario(env.randomizer)
                         else:
                             self.scenario = StaticSpeedScenario()
 

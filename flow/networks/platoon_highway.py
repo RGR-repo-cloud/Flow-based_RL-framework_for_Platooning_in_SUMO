@@ -107,8 +107,8 @@ class PlatoonHighwayNetwork(Network):
         for i in range(num_vehicles - 1):
             start_lanes.append(0)
             start_positions.append(("highway_0", position))
-            if cls.network.randomized_initial_positions:
-                gap = np.random.uniform(low=lower_gap_bound, high=upper_gap_bound)
+            if cls.randomized_initial_positions:
+                gap = cls.randomizer.uniform(low=lower_gap_bound, high=upper_gap_bound)
             else:
                 gap = default_gaps[i]
             position += gap

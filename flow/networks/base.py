@@ -388,10 +388,6 @@ class Network(object):
         self.internal_edge_starts = self.specify_internal_edge_starts()
         self.intersection_edge_starts = []  # this will be deprecated
 
-        self.randomized_initial_positions = False
-
-    def set_randomized_initial_positions(self, randomized_initial_positions):
-        self.randomized_initial_positions = randomized_initial_positions
 
     # TODO: convert to property
     def specify_edge_starts(self):

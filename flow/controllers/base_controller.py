@@ -152,7 +152,7 @@ class BaseController(metaclass=ABCMeta):
 
         # add noise to the accelerations, if requested
         if self.accel_noise > 0:
-            accel += np.sqrt(env.sim_step) * np.random.normal(0, self.accel_noise)
+            accel += np.sqrt(env.sim_step) * env.randomizer.normal(0, self.accel_noise)
         env.k.vehicle.update_accel(self.veh_id, accel, noise=True, failsafe=False)
 
         # run the fail-safes, if requested

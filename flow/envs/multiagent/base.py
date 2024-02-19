@@ -2,7 +2,6 @@
 
 from copy import deepcopy
 import numpy as np
-import random
 import traceback
 from gym.spaces import Box
 
@@ -148,6 +147,9 @@ class MultiEnv(Env, MultiAgentEnv):
         # reset the time counter
         self.time_counter = 0
 
+        # reset randomizer
+        self.randomizer = np.random.default_rng(seed = self.episode_randomizer.integers(1e6))
+
         # Now that we've passed the possibly fake init steps some rl libraries
         # do, we can feel free to actually render things
         if self.should_render:
@@ -174,12 +176,13 @@ class MultiEnv(Env, MultiAgentEnv):
                 (self.step_counter > 2e6 and self.simulator != 'aimsun'):
             self.step_counter = 0
             # issue a random seed to induce randomness into the next rollout
-            self.sim_params.seed = random.randint(0, 1e5)
+            self.sim_params.seed = self.randomizer.integers(0, 1e5)
 
             self.k.vehicle = deepcopy(self.initial_vehicles)
             self.k.vehicle.master_kernel = self.k
 
             self.set_mode(self.mode)
+            self.set_randomizer()
 
             # restart the sumo instance
             self.restart_simulation(self.sim_params)

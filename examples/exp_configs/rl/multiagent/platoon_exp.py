@@ -19,7 +19,8 @@ from ray.tune.registry import register_env
 # time horizon of a single rollout
 HORIZON = 600
 
-seed = 0
+# seed for the environmental behaviour
+seed = 1
 
 vehicles = VehicleParams()
 

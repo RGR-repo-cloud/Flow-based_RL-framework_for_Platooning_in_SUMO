@@ -1,7 +1,6 @@
 """Script containing the base network kernel class."""
 
 import logging
-import random
 import numpy as np
 from copy import deepcopy
 from flow.utils.exceptions import FatalFlowError
@@ -72,6 +71,15 @@ class BaseKernelNetwork(object):
         self.internal_edgestarts_dict = None
         self.total_edgestarts = None
         self.total_edgestarts_dict = None
+
+        self.randomizer = None
+        self.randomized_initial_positions = False
+    
+    def set_randomized_initial_positions(self, randomized_initial_positions):
+        self.randomized_initial_positions = randomized_initial_positions
+
+    def set_randomizer(self, randomizer):
+        self.randomizer = randomizer
 
     def generate_network(self, network):
         """Generate the necessary prerequisites for the simulating a network.
@@ -372,7 +380,7 @@ class BaseKernelNetwork(object):
         # leave its current edge
         if initial_config.perturbation > 0:
             for i in range(num_vehicles):
-                perturb = np.random.normal(0, initial_config.perturbation)
+                perturb = self.randomizer.normal(0, initial_config.perturbation)
                 edge, pos = startpositions[i]
                 pos = max(0, min(self.edge_length(edge), pos + perturb))
                 startpositions[i] = (edge, pos)

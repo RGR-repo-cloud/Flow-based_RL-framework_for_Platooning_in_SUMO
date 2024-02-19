@@ -88,13 +88,6 @@ class TraCIVehicle(KernelVehicle):
         # old speeds used to compute accelerations
         self.previous_speeds = {}
 
-        # introduces stochasticity into initial_speeds
-        self.randomized_initial_speed = False
-        self.initial_speed_variance = sim_params.initial_speed_variance
-
-
-    def set_randomized_initial_speed(self, randomized_initial_speed):
-        self.randomized_initial_speed = randomized_initial_speed
 
     def initialize(self, vehicles):
         """Initialize vehicle state information.
@@ -122,7 +115,7 @@ class TraCIVehicle(KernelVehicle):
                 self.__vehicles[veh_id]['type'] = typ['veh_id']
 
                 if self.randomized_initial_speed:
-                    self.__vehicles[veh_id]['initial_speed'] = typ['initial_speed'] + np.random.uniform(low=-self.initial_speed_variance/2, high=self.initial_speed_variance/2)
+                    self.__vehicles[veh_id]['initial_speed'] = typ['initial_speed'] + self.randomizer.uniform(low=-self.initial_speed_variance/2, high=self.initial_speed_variance/2)
                 else:
                     self.__vehicles[veh_id]['initial_speed'] = typ['initial_speed']
                 
@@ -1121,7 +1114,7 @@ class TraCIVehicle(KernelVehicle):
         else:
             num_routes = len(self.master_kernel.network.rts[edge])
             frac = [val[1] for val in self.master_kernel.network.rts[edge]]
-            route_id = 'route{}_{}'.format(edge, np.random.choice(
+            route_id = 'route{}_{}'.format(edge, self.randomizer.choice(
                 [i for i in range(num_routes)], size=1, p=frac)[0])
 
         self.kernel_api.vehicle.addFull(

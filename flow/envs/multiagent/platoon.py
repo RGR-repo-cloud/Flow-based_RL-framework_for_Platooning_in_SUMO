@@ -275,12 +275,11 @@ class UnilateralPlatoonEnv(PlatoonEnv):
             else:
                 self.add_previous_state(states)
             states = self.create_state_frame()
-    
 
         return states
     
 
-    def reward_function_2(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
+    def reward_function2(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
         
         max_gap_error = 15
         max_speed_error = 10
@@ -323,11 +322,11 @@ class UnilateralPlatoonEnv(PlatoonEnv):
         if neg_reward >= -1:
             return neg_reward + 1
         
-        return self.custom_sigmoid(neg_reward + 1)
+        return 2 * self.custom_sigmoid(neg_reward + 1) - 1
         
     
-    def custom_sigmoid(self, x):
-        return 2 / (1 + math.exp(-x)) - 1
+    def sigmoid(self, x):
+        return 1 / (1 + math.exp(-x))
     
 
     def reward_function(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
