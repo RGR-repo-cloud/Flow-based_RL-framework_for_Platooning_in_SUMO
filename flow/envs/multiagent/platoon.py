@@ -1,6 +1,6 @@
 """Environment for training the acceleration behavior of vehicles in a ring."""
 import numpy as np
-from gym.spaces import Box
+from gym.spaces import Box, Dict
 
 from flow.core import rewards
 from flow.envs.multiagent.base import MultiEnv
@@ -14,8 +14,96 @@ ADDITIONAL_ENV_PARAMS = {
     # maximum deceleration for autonomous vehicles, in m/s^2
     "max_decel": 3,
     # number of scenarios
-    "num_scenarios": 1
+    "num_scenarios": 1,
+    # size of the state's time frame
+    "state_time_frame": 1
     }
+
+
+def reward_function_bilateral(headway_front, headway_rear, speed_front, speed_self, speed_rear, accel, previous_accel, crashed, time_gap, standstill_distance):
+
+    max_gap_error = 15
+    max_speed_error = 10
+    max_accel = 3
+    reward_scale = 0.01
+
+    gap_error_front = (standstill_distance + speed_self * time_gap) - headway_front
+    gap_error_rear = (standstill_distance + speed_rear * time_gap) - headway_rear
+    gap_error_rear = gap_error_rear if gap_error_rear > 0 else 0
+    speed_error = speed_front - speed_self
+    jerk = accel - previous_accel
+
+    normed_gap_error_front = abs(gap_error_front / max_gap_error)
+    normed_gap_error_rear = abs(gap_error_rear / max_gap_error)
+    normed_speed_error = abs(speed_error / max_speed_error)
+    normed_input_penalty = abs((accel / max_accel))
+    normed_jerk = abs(jerk / (2 * max_accel))
+
+    weight_a = 0.1
+    weight_b = 0.1
+    weight_c = 0.2
+    weight_d = 0.4
+
+    normed_reward = -(normed_gap_error_front + 
+                    (weight_a * normed_speed_error) + 
+                    (weight_b * normed_input_penalty) + 
+                    (weight_c * normed_jerk) +
+                    (weight_d * normed_gap_error_rear))
+    sqr_reward = -(pow(gap_error_front, 2) + 
+                    (weight_a * pow(speed_error, 2)) + 
+                    (weight_b * pow(accel, 2)) +
+                    (weight_c * pow(jerk, 2)) +
+                    (weight_d * pow(gap_error_rear, 2)))
+
+    epsilon = -0.4483
+
+    if normed_reward < epsilon:
+        reward = normed_reward
+    else:
+        reward = reward_scale * sqr_reward
+    
+    return reward
+    
+
+def reward_function_unilateral(headway, speed_front, speed_self, accel, previous_accel, crashed, time_gap, standstill_distance):
+    
+    max_gap_error = 15
+    max_speed_error = 10
+    max_accel = 3
+    reward_scale = 0.01
+
+    gap_error = (standstill_distance + speed_self * time_gap) - headway
+    speed_error = speed_front - speed_self
+    jerk = accel - previous_accel
+
+    normed_gap_error = abs(gap_error / max_gap_error)
+    normed_speed_error = abs(speed_error / max_speed_error)
+    normed_input_penalty = abs((accel / max_accel))
+    normed_jerk = abs(jerk / (2 * max_accel))
+
+
+    weight_a = 0.1
+    weight_b = 0.1
+    weight_c = 0.2
+
+    normed_reward = -(normed_gap_error + 
+                    (weight_a * normed_speed_error) + 
+                    (weight_b * normed_input_penalty) + 
+                    (weight_c * normed_jerk))
+    sqr_reward = -(pow(gap_error, 2) + 
+                    (weight_a * pow(speed_error, 2)) + 
+                    (weight_b * pow(accel, 2)) +
+                    (weight_c * pow(jerk, 2)))
+
+    epsilon = -0.4483
+
+    if normed_reward < epsilon:
+        reward = normed_reward
+    else:
+        reward = reward_scale * sqr_reward
+    
+    return reward
+
 
 
 class PlatoonEnv(MultiEnv):
@@ -40,7 +128,7 @@ class PlatoonEnv(MultiEnv):
         for veh_id in self.veh_ids[1:]:
             self.previous_accels[veh_id] = 0
 
-        self.state_frame_size = 1
+        self.state_frame_size = self.env_params.additional_params['state_time_frame']
         self.previous_states = {}
         self.state_frame = {}
 
@@ -130,12 +218,14 @@ class UnilateralPlatoonEnv(PlatoonEnv):
 
     @property
     def observation_space(self):
-        """See class definition."""
-        return Box(
-            low=-1000000, ###########should be made reasonable
-            high=1000000, ###########should be made reasonable
-            shape=(4 * self.state_frame_size, ), ##########unilateral
-            dtype=np.float32)
+        obs_space = {}
+        for veh_id in self.veh_ids[1:]:
+            obs_space[veh_id] = Box(
+                                low=-1000000, ###########should be made reasonable
+                                high=1000000, ###########should be made reasonable
+                                shape=(4 * self.state_frame_size, ), # unilateral
+                                dtype=np.float32)
+        return Dict(obs_space)
     
 
     def compute_reward(self, rl_actions, **kwargs):
@@ -193,11 +283,11 @@ class UnilateralPlatoonEnv(PlatoonEnv):
             crashed[veh_id] = veh_id in self.k.vehicle.get_arrived_rl_ids(self.env_params.sims_per_step)
 
         
-        reward_follower0 = self.reward_function(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'])
-        reward_follower1 = self.reward_function(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'])
-        reward_follower2 = self.reward_function(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'])
-        reward_follower3 = self.reward_function(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'])
-        reward_follower4 = self.reward_function(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'])
+        reward_follower0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'], self.time_gap, self.standstill_distance)
+        reward_follower1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'], self.time_gap, self.standstill_distance)
+        reward_follower2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'], self.time_gap, self.standstill_distance)
+        reward_follower3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'], self.time_gap, self.standstill_distance)
+        reward_follower4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'], self.time_gap, self.standstill_distance)
             
         rewards = {self.veh_ids[1]: reward_follower0,
                    self.veh_ids[2]: reward_follower1,
@@ -269,6 +359,7 @@ class UnilateralPlatoonEnv(PlatoonEnv):
             self.veh_ids[5]: [-speeds[5] + speeds[4], gap_errors[4], accelerations[5], accelerations[4]]
         }
         
+        # time frame
         if self.state_frame_size > 1:
             if self.time_counter == 0:
                 self.init_state_frame(states)
@@ -276,139 +367,8 @@ class UnilateralPlatoonEnv(PlatoonEnv):
                 self.add_previous_state(states)
             states = self.create_state_frame()
 
+
         return states
-    
-
-    def reward_function2(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
-        
-        max_gap_error = 15
-        max_speed_error = 10
-        max_accel = 3
-        reward_scale = 0.01
-
-        gap_error = (self.standstill_distance + speed_self * self.time_gap) - headway
-        speed_error = speed_front - speed_self
-        jerk = accel - previous_accel
-
-        normed_gap_error = abs(gap_error / max_gap_error)
-        normed_speed_error = abs(speed_error / max_speed_error)
-        normed_input_penalty = abs((accel / max_accel))
-        normed_jerk = abs(jerk / (2 * max_accel))
-
-
-        weight_a = 0.1
-        weight_b = 0.1
-        weight_c = 0.2
-
-        abs_reward = -(normed_gap_error + 
-                       (weight_a * normed_speed_error) + 
-                       (weight_b * normed_input_penalty) + 
-                       (weight_c * normed_jerk))
-        sqr_reward = -(pow(gap_error, 2) + 
-                        (weight_a * pow(speed_error, 2)) + 
-                        (weight_b * pow(accel, 2)) +
-                        (weight_c * pow(jerk, 2)))
-
-        epsilon = -0.4483
-
-        if abs_reward < epsilon:
-            neg_reward = abs_reward
-        else:
-            neg_reward = reward_scale * sqr_reward
-
-        if crashed:
-            return -1
-        
-        if neg_reward >= -1:
-            return neg_reward + 1
-        
-        return 2 * self.custom_sigmoid(neg_reward + 1) - 1
-        
-    
-    def sigmoid(self, x):
-        return 1 / (1 + math.exp(-x))
-    
-
-    def reward_function(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
-        
-        max_gap_error = 15
-        max_speed_error = 10
-        max_accel = 3
-        reward_scale = 0.01
-
-        gap_error = (self.standstill_distance + speed_self * self.time_gap) - headway
-        speed_error = speed_front - speed_self
-        jerk = accel - previous_accel
-
-        normed_gap_error = abs(gap_error / max_gap_error)
-        normed_speed_error = abs(speed_error / max_speed_error)
-        normed_input_penalty = abs((accel / max_accel))
-        normed_jerk = abs(jerk / (2 * max_accel))
-
-
-        weight_a = 0.1
-        weight_b = 0.1
-        weight_c = 0.2
-
-        abs_reward = -(normed_gap_error + 
-                       (weight_a * normed_speed_error) + 
-                       (weight_b * normed_input_penalty) + 
-                       (weight_c * normed_jerk))
-        sqr_reward = -(pow(gap_error, 2) + 
-                        (weight_a * pow(speed_error, 2)) + 
-                        (weight_b * pow(accel, 2)) +
-                        (weight_c * pow(jerk, 2)))
-
-        epsilon = -0.4483
-
-        if abs_reward < epsilon:
-            neg_reward = abs_reward
-        else:
-            neg_reward = reward_scale * sqr_reward
-        
-        return neg_reward
-    
-
-    def reward_function_3(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
-        
-        max_err = 100
-        max_gap_error = 15
-        max_speed_error = 10
-        max_accel = 3
-        reward_scale = 0.01
-
-        gap_error = (self.standstill_distance + speed_self * self.time_gap) - headway
-        speed_error = speed_front - speed_self
-        jerk = accel - previous_accel
-
-        normed_gap_error = abs(gap_error / max_gap_error)
-        normed_speed_error = abs(speed_error / max_speed_error)
-        normed_input_penalty = abs((accel / max_accel))
-        normed_jerk = abs(jerk / (2 * max_accel))
-
-
-        weight_a = 0.1
-        weight_b = 0.1
-        weight_c = 0.2
-
-        abs_reward = -(normed_gap_error + 
-                       (weight_a * normed_speed_error) + 
-                       (weight_b * normed_input_penalty) + 
-                       (weight_c * normed_jerk))
-        sqr_reward = -(pow(gap_error, 2) + 
-                        (weight_a * pow(speed_error, 2)) + 
-                        (weight_b * pow(accel, 2)) +
-                        (weight_c * pow(jerk, 2)))
-
-        epsilon = -0.4483
-
-        if abs_reward < epsilon:
-            neg_reward = abs_reward
-        else:
-            neg_reward = reward_scale * sqr_reward
-        
-        return (neg_reward + max_err) / max_err
-    
 
 
 class BilateralPlatoonEnv(PlatoonEnv):
@@ -422,12 +382,20 @@ class BilateralPlatoonEnv(PlatoonEnv):
 
     @property
     def observation_space(self):
-        """See class definition."""
-        return Box(
-            low=-1000000, ###########should be made reasonable
-            high=1000000, ###########should be made reasonable
-            shape=(7 * self.state_frame_size, ), ##########unilateral
-            dtype=np.float32)
+        obs_space = {}
+        for veh_id in self.veh_ids[1:-1]:
+            obs_space[veh_id] = Box(
+                                low=-1000000, ###########should be made reasonable
+                                high=1000000, ###########should be made reasonable
+                                shape=(7 * self.state_frame_size, ), # bilateral
+                                dtype=np.float32)
+        obs_space[self.veh_ids[-1]] = Box(
+                                low=-1000000, ###########should be made reasonable
+                                high=1000000, ###########should be made reasonable
+                                shape=(4 * self.state_frame_size, ), # bilateral
+                                dtype=np.float32)
+        
+        return Dict(obs_space)
     
 
     def compute_reward(self, rl_actions, **kwargs):
@@ -475,11 +443,22 @@ class BilateralPlatoonEnv(PlatoonEnv):
         for veh_id in self.veh_ids[1:]:
             crashed[veh_id] = veh_id in self.k.vehicle.get_arrived_rl_ids(self.env_params.sims_per_step)
 
-        reward_follower0 = self.reward_function(headways[0], headways[1], speeds[0], speeds[1], speeds[2], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'])
-        reward_follower1 = self.reward_function(headways[1], headways[2], speeds[1], speeds[2], speeds[3], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'])
-        reward_follower2 = self.reward_function(headways[2], headways[3], speeds[2], speeds[3], speeds[4], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'])
-        reward_follower3 = self.reward_function(headways[3], headways[4], speeds[3], speeds[4], speeds[5], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'])
-        reward_follower4 = self.reward_function(headways[4], self.standstill_distance, speeds[4], speeds[5], 0, accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'])
+        if self.mode == 'train':
+            reward_follower0 = reward_function_bilateral(headways[0], headways[1], speeds[0], speeds[1], speeds[2], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'], self.time_gap, self.standstill_distance)
+            reward_follower1 = reward_function_bilateral(headways[1], headways[2], speeds[1], speeds[2], speeds[3], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'], self.time_gap, self.standstill_distance)
+            reward_follower2 = reward_function_bilateral(headways[2], headways[3], speeds[2], speeds[3], speeds[4], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'], self.time_gap, self.standstill_distance)
+            reward_follower3 = reward_function_bilateral(headways[3], headways[4], speeds[3], speeds[4], speeds[5], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'], self.time_gap, self.standstill_distance)
+            reward_follower4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'], self.time_gap, self.standstill_distance)
+        
+        elif self.mode == 'eval':
+            reward_follower0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'], self.time_gap, self.standstill_distance)
+            reward_follower1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'], self.time_gap, self.standstill_distance)
+            reward_follower2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'], self.time_gap, self.standstill_distance)
+            reward_follower3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'], self.time_gap, self.standstill_distance)
+            reward_follower4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'], self.time_gap, self.standstill_distance)
+        
+        else:
+            raise Exception("no valid reward mode")
     
             
         rewards = {self.veh_ids[1]: reward_follower0,
@@ -549,7 +528,7 @@ class BilateralPlatoonEnv(PlatoonEnv):
             self.veh_ids[2]: [-speeds[2] + speeds[1], -speeds[2] + speeds[3], gap_errors[1], gap_errors[2], accelerations[2], accelerations[1], accelerations[3]],
             self.veh_ids[3]: [-speeds[3] + speeds[2], -speeds[3] + speeds[4], gap_errors[2], gap_errors[3], accelerations[3], accelerations[2], accelerations[4]],
             self.veh_ids[4]: [-speeds[4] + speeds[3], -speeds[4] + speeds[5], gap_errors[3], gap_errors[4], accelerations[4], accelerations[3], accelerations[5]],
-            self.veh_ids[5]: [-speeds[5] + speeds[4], 0, gap_errors[4], 0, accelerations[5], accelerations[4], 0] # acceleration of successor should be adapted
+            self.veh_ids[5]: [-speeds[5] + speeds[4], gap_errors[4], accelerations[5], accelerations[4]] # last follower has no successor
         }
         
         if self.state_frame_size > 1:
@@ -560,63 +539,6 @@ class BilateralPlatoonEnv(PlatoonEnv):
             states = self.create_state_frame()
 
         return states
-    
-
-    def reward_function(self, headway_front, headway_rear, speed_front, speed_self, speed_rear, accel, previous_accel, crashed):
-
-        max_err = 200
-        max_gap_error = 15
-        max_speed_error = 10
-        max_accel = 3
-
-        gap_error_front = (self.standstill_distance + speed_self * self.time_gap) - headway_front
-        gap_error_rear = (self.standstill_distance + speed_rear * self.time_gap) - headway_rear
-        gap_error_rear = gap_error_rear if gap_error_rear > 0 else 0
-        speed_error = speed_front - speed_self
-        jerk = accel - previous_accel
-
-        normed_gap_error_front = abs(gap_error_front / max_gap_error)
-        normed_gap_error_rear = abs(gap_error_rear / max_gap_error)
-        normed_speed_error = abs(speed_error / max_speed_error)
-        normed_input_penalty = abs((accel / max_accel))
-        normed_jerk = abs(jerk / (2 * max_accel))
-
-        weight_a = 0.1
-        weight_b = 0.1
-        weight_c = 0.2
-        weight_d = 0.5
-
-        abs_reward = -(normed_gap_error_front + 
-                       (weight_a * normed_speed_error) + 
-                       (weight_b * normed_input_penalty) + 
-                       (weight_c * normed_jerk) +
-                       (weight_d * normed_gap_error_rear))
-        sqr_reward = -(pow(gap_error_front, 2) + 
-                        (weight_a * pow(speed_error, 2)) + 
-                        (weight_b * pow(accel, 2)) +
-                        (weight_c * pow(jerk, 2)) +
-                        (weight_d * pow(gap_error_rear, 2)))
-
-        epsilon = -0.675
-
-        if abs_reward < epsilon:
-            neg_reward = abs_reward
-        else:
-            neg_reward = sqr_reward
-
-        if neg_reward < -max_err:
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            print(neg_reward)
-        
-        if crashed:
-            print("!!!!!!!!!!!!!crashed!!!!!!!!!!!!!!!!")
-            return -1
-        
-        if speed_self == 0 and speed_front > 0:
-            return 0
-        
-        return (neg_reward + max_err) / max_err
-    
 
 
 class FlatbedEnv(PlatoonEnv):

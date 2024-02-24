@@ -16,11 +16,20 @@ from flow.networks import HighwayNetwork
 from flow.utils.registry import make_create_env
 from ray.tune.registry import register_env
 
-# time horizon of a single rollout
-HORIZON = 600
+
+# configurable parameters
 
 # seed for the environmental behaviour
 seed = 1
+# type of control model environment: "UnilateralPlatoonEnv" or "BilateralPlatoonEnv"
+env_type = BilateralPlatoonEnv
+# size of state's time frame
+state_time_frame = 4
+
+####################################################################
+
+# time horizon of a single rollout
+HORIZON = 600
 
 vehicles = VehicleParams()
 
@@ -109,7 +118,7 @@ flow_params = dict(
     exp_tag='multi_lane_highway',
 
     # name of the flow environment the experiment is running on
-    env_name=UnilateralPlatoonEnv,
+    env_name=env_type,
 
     # name of the network class the experiment is running on
     network=PlatoonHighwayNetwork,
@@ -132,7 +141,8 @@ flow_params = dict(
         additional_params={
             'max_accel': 3,
             'max_decel': 3,
-            'num_scenarios':6
+            'num_scenarios':6,
+            'state_time_frame': state_time_frame
         },
     ),
 
