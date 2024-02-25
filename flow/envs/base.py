@@ -459,7 +459,8 @@ class Env(gym.Env, metaclass=ABCMeta):
         self.time_counter = 0
 
         # reset randomizer
-        self.randomizer = np.random.default_rng(seed = self.episode_randomizer.integers(1e6))
+        if self.mode == 'train':
+            self.randomizer = np.random.default_rng(seed = self.episode_randomizer.integers(1e6))
 
         # Now that we've passed the possibly fake init steps some rl libraries
         # do, we can feel free to actually render things
@@ -492,6 +493,7 @@ class Env(gym.Env, metaclass=ABCMeta):
             self.k.vehicle = deepcopy(self.initial_vehicles)
             self.k.vehicle.master_kernel = self.k
 
+            # due to the deepcopy of the kernel vehicle setting must be repeated
             self.set_mode(self.mode)
             self.set_randomizer()
 

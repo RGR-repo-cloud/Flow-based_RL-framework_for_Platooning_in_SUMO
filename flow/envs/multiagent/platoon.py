@@ -538,6 +538,7 @@ class BilateralPlatoonEnv(PlatoonEnv):
                 self.add_previous_state(states)
             states = self.create_state_frame()
 
+
         return states
 
 
@@ -610,11 +611,11 @@ class FlatbedEnv(PlatoonEnv):
             crashed[veh_id] = veh_id in self.k.vehicle.get_arrived_rl_ids(self.env_params.sims_per_step)
 
         
-        reward_follower0 = self.reward_function(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'])
-        reward_follower1 = self.reward_function(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'])
-        reward_follower2 = self.reward_function(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'])
-        reward_follower3 = self.reward_function(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'])
-        reward_follower4 = self.reward_function(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'])
+        reward_follower0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'], self.time_gap, self.standstill_distance)
+        reward_follower1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'], self.time_gap, self.standstill_distance)
+        reward_follower2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'], self.time_gap, self.standstill_distance)
+        reward_follower3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'], self.time_gap, self.standstill_distance)
+        reward_follower4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'], self.time_gap, self.standstill_distance)
 
         rewards = {self.veh_ids[1]: reward_follower0,
                    self.veh_ids[2]: reward_follower1,
@@ -646,55 +647,5 @@ class FlatbedEnv(PlatoonEnv):
 
         return states
     
-
-    def reward_function(self, headway, speed_front, speed_self, accel, previous_accel, crashed):
-        
-        max_err = 100
-        max_gap_error = 15
-        max_speed_error = 10
-        max_accel = 3
-
-        gap_error = (self.standstill_distance + speed_self * self.time_gap) - headway
-        speed_error = speed_front - speed_self
-        jerk = accel - previous_accel
-
-        normed_gap_error = abs(gap_error / max_gap_error)
-        normed_speed_error = abs(speed_error / max_speed_error)
-        normed_input_penalty = abs((accel / max_accel))
-        normed_jerk = abs(jerk / (2 * max_accel))
-
-
-        weight_a = 0.1
-        weight_b = 0.1
-        weight_c = 0.2
-
-        abs_reward = -(normed_gap_error + 
-                       (weight_a * normed_speed_error) + 
-                       (weight_b * normed_input_penalty) + 
-                       (weight_c * normed_jerk))
-        sqr_reward = -(pow(gap_error, 2) + 
-                        (weight_a * pow(speed_error, 2)) + 
-                        (weight_b * pow(accel, 2)) +
-                        (weight_c * pow(jerk, 2)))
-
-        epsilon = -0.4483
-
-        if abs_reward < epsilon:
-            neg_reward = abs_reward
-        else:
-            neg_reward = sqr_reward
-
-        if neg_reward < -max_err:
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            print(neg_reward)
-        
-        if crashed:
-            print("!!!!!!!!!!!!!crashed!!!!!!!!!!!!!!!!")
-            return -1
-        
-        if speed_self == 0 and speed_front > 0:
-            return 0
-        
-        return (neg_reward + max_err) / max_err
 
 
