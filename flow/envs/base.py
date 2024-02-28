@@ -236,6 +236,9 @@ class Env(gym.Env, metaclass=ABCMeta):
                 'Mode %s is not supported!' % self.sim_params.render)
         atexit.register(self.terminate)
 
+    def load_randomizer_state(self, state):
+        self.episode_randomizer.bit_generator.state = state
+
     def set_randomizer(self):
         self.k.network.set_randomizer(self.randomizer)
         self.k.vehicle.set_randomizer(self.randomizer)

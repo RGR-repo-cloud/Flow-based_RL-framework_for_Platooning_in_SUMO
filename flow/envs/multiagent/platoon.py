@@ -30,12 +30,15 @@ def reward_function_bilateral(headway_front, headway_rear, speed_front, speed_se
     gap_error_front = (standstill_distance + speed_self * time_gap) - headway_front
     gap_error_rear = (standstill_distance + speed_rear * time_gap) - headway_rear
     gap_error_rear = gap_error_rear if gap_error_rear > 0 else 0
-    speed_error = speed_front - speed_self
+    speed_error_front = speed_front - speed_self
+    speed_error_rear = speed_self - speed_rear
+    speed_error_rear = speed_error_rear if speed_error_rear < 0 else 0
     jerk = accel - previous_accel
 
     normed_gap_error_front = abs(gap_error_front / max_gap_error)
     normed_gap_error_rear = abs(gap_error_rear / max_gap_error)
-    normed_speed_error = abs(speed_error / max_speed_error)
+    normed_speed_error_front = abs(speed_error_front / max_speed_error)
+    normed_speed_error_rear = abs(speed_error_rear / max_speed_error)
     normed_input_penalty = abs((accel / max_accel))
     normed_jerk = abs(jerk / (2 * max_accel))
 
@@ -43,17 +46,21 @@ def reward_function_bilateral(headway_front, headway_rear, speed_front, speed_se
     weight_b = 0.1
     weight_c = 0.2
     weight_d = 0.4
+    weight_e = 0.04
 
     normed_reward = -(normed_gap_error_front + 
-                    (weight_a * normed_speed_error) + 
+                    (weight_a * normed_speed_error_front) + 
                     (weight_b * normed_input_penalty) + 
                     (weight_c * normed_jerk) +
-                    (weight_d * normed_gap_error_rear))
+                    (weight_d * normed_gap_error_rear) +
+                    (weight_e * normed_speed_error_rear)
+                    )
     sqr_reward = -(pow(gap_error_front, 2) + 
-                    (weight_a * pow(speed_error, 2)) + 
+                    (weight_a * pow(speed_error_front, 2)) + 
                     (weight_b * pow(accel, 2)) +
                     (weight_c * pow(jerk, 2)) +
-                    (weight_d * pow(gap_error_rear, 2)))
+                    (weight_d * pow(gap_error_rear, 2)) +
+                    (weight_e * pow(speed_error_rear, 2)))
 
     epsilon = -0.4483
 
