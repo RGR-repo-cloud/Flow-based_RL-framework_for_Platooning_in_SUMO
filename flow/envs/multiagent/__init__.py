@@ -11,7 +11,7 @@ from flow.envs.multiagent.traffic_light_grid import MultiTrafficLightGridPOEnv
 from flow.envs.multiagent.highway import MultiAgentHighwayPOEnv
 from flow.envs.multiagent.merge import MultiAgentMergePOEnv
 from flow.envs.multiagent.i210 import I210MultiEnv
-from flow.envs.multiagent.platoon import PlatoonEnv, UnilateralPlatoonEnv, BilateralPlatoonEnv, FlatbedEnv
+from flow.envs.multiagent.platoon import PlatoonEnv, UnilateralPlatoonEnv, BilateralPlatoonEnv, FlatbedEnv, PloegEnv
 from flow.envs.multiagent.constant_speed import ConstantSpeedEnv2V, ConstantSpeedEnv5V, ConstantSpeedEnv10V
 from flow.envs.multiagent.custom_accel import CustomAccelEnv
 
@@ -33,6 +33,7 @@ __all__ = [
     'CustomAccelEnv',
     'UnilateralPlatoonEnv',
     'BilateralPlatoonEnv',
-    'FlatbedEnv'
+    'FlatbedEnv',
+    'PloegEnv'
 
 ]

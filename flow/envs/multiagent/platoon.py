@@ -20,6 +20,57 @@ ADDITIONAL_ENV_PARAMS = {
     }
 
 
+def reward_function_unilateral(headway, speed_front, speed_self, accel, previous_accel, crashed, time_gap, standstill_distance):
+    
+    max_gap_error = 15
+    max_speed_error = 10
+    max_accel = 3
+    reward_scale = 0.01
+
+    gap_error = (standstill_distance + speed_self * time_gap) - headway
+    speed_error = speed_front - speed_self
+    jerk = accel - previous_accel
+
+    normed_gap_error = abs(gap_error / max_gap_error)
+    normed_speed_error = abs(speed_error / max_speed_error)
+    normed_input_penalty = abs((accel / max_accel))
+    normed_jerk = abs(jerk / (2 * max_accel))
+
+
+    weight_a = 0.1
+    weight_b = 0.1
+    weight_c = 0.2
+
+    normed_reward = -(normed_gap_error + 
+                    (weight_a * normed_speed_error) + 
+                    (weight_b * normed_input_penalty) + 
+                    (weight_c * normed_jerk))
+    sqr_reward = -(pow(gap_error, 2) + 
+                    (weight_a * pow(speed_error, 2)) + 
+                    (weight_b * pow(accel, 2)) +
+                    (weight_c * pow(jerk, 2)))
+
+    epsilon = -0.4483
+
+    if normed_reward < epsilon:
+        reward = normed_reward
+    else:
+        reward = reward_scale * sqr_reward
+
+    if crashed:
+        return 0, gap_error, speed_error, jerk
+        
+    if reward >= -1:
+        return reward + 2, gap_error, speed_error, jerk
+        
+    return custom_sigmoid(reward + 1), gap_error, speed_error, jerk
+        
+
+def custom_sigmoid(x):
+    return 2 / (1 + math.exp(-x))
+    
+
+
 def reward_function_bilateral(headway_front, headway_rear, speed_front, speed_self, speed_rear, accel, previous_accel, crashed, time_gap, standstill_distance):
 
     max_gap_error = 15
@@ -72,7 +123,7 @@ def reward_function_bilateral(headway_front, headway_rear, speed_front, speed_se
     return reward
     
 
-def reward_function_unilateral(headway, speed_front, speed_self, accel, previous_accel, crashed, time_gap, standstill_distance):
+def reward_function_unilateral_orig(headway, speed_front, speed_self, accel, previous_accel, crashed, time_gap, standstill_distance):
     
     max_gap_error = 15
     max_speed_error = 10
@@ -109,7 +160,7 @@ def reward_function_unilateral(headway, speed_front, speed_self, accel, previous
     else:
         reward = reward_scale * sqr_reward
     
-    return reward
+    return reward, gap_error, speed_error, jerk
 
 
 
@@ -138,6 +189,17 @@ class PlatoonEnv(MultiEnv):
         self.state_frame_size = self.env_params.additional_params['state_time_frame']
         self.previous_states = {}
         self.state_frame = {}
+        self.last_time = self.time_counter
+
+        self.eval_state_dict = {}
+        for agent_id in self.veh_ids[1:]:
+            self.eval_state_dict[agent_id] = {}
+        
+        self.eval_reward_dict = {}
+        for agent_id in self.veh_ids[1:]:
+            self.eval_reward_dict[agent_id] = {}
+
+        self.eval_leader_dict = {}
 
 
     @property
@@ -210,7 +272,38 @@ class PlatoonEnv(MultiEnv):
             state_frame[veh_id] = veh_state_frame
         
         return state_frame
+    
 
+    def add_to_eval_state_data(self, key, values):
+        
+        current_scenario = self.scenario_tracker
+
+        for id, agent_id in enumerate(self.veh_ids[1:]):
+            if current_scenario not in self.eval_state_dict[agent_id]:
+                self.eval_state_dict[agent_id][current_scenario] = {}
+            if key not in self.eval_state_dict[agent_id][current_scenario].keys():
+                self.eval_state_dict[agent_id][current_scenario][key] = []
+            self.eval_state_dict[agent_id][current_scenario][key].append(values[id])
+
+    def add_to_eval_reward_data(self, key, values):
+        
+        current_scenario = self.scenario_tracker
+
+        for id, agent_id in enumerate(self.veh_ids[1:]):
+            if current_scenario not in self.eval_reward_dict[agent_id]:
+                self.eval_reward_dict[agent_id][current_scenario] = {}
+            if key not in self.eval_reward_dict[agent_id][current_scenario].keys():
+                self.eval_reward_dict[agent_id][current_scenario][key] = []
+            self.eval_reward_dict[agent_id][current_scenario][key].append(values[id])
+
+    def add_to_eval_leader(self, key, value):
+        
+        current_scenario = self.scenario_tracker
+        if current_scenario not in self.eval_leader_dict:
+            self.eval_leader_dict[current_scenario] = {}
+        if key not in self.eval_leader_dict[current_scenario].keys():
+            self.eval_leader_dict[current_scenario][key] = []
+        self.eval_leader_dict[current_scenario][key].append(value)
 
 
 class UnilateralPlatoonEnv(PlatoonEnv):
@@ -290,11 +383,11 @@ class UnilateralPlatoonEnv(PlatoonEnv):
             crashed[veh_id] = veh_id in self.k.vehicle.get_arrived_rl_ids(self.env_params.sims_per_step)
 
         
-        reward_follower0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'], self.time_gap, self.standstill_distance)
-        reward_follower1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'], self.time_gap, self.standstill_distance)
-        reward_follower2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'], self.time_gap, self.standstill_distance)
-        reward_follower3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'], self.time_gap, self.standstill_distance)
-        reward_follower4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'], self.time_gap, self.standstill_distance)
+        reward_follower0, gap_error0, speed_error0, jerk0  = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'], self.time_gap, self.standstill_distance)
+        reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'], self.time_gap, self.standstill_distance)
+        reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'], self.time_gap, self.standstill_distance)
+        reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'], self.time_gap, self.standstill_distance)
+        reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'], self.time_gap, self.standstill_distance)
             
         rewards = {self.veh_ids[1]: reward_follower0,
                    self.veh_ids[2]: reward_follower1,
@@ -302,8 +395,19 @@ class UnilateralPlatoonEnv(PlatoonEnv):
                    self.veh_ids[4]: reward_follower3,
                    self.veh_ids[5]: reward_follower4
                    }
-
         
+        # log eval data
+        if self.env_params.evaluate:
+            rl_actions_list = []
+            for veh_id in self.veh_ids[1:]:
+                rl_actions_list.append(rl_actions[veh_id][0])
+            
+            self.add_to_eval_reward_data('step', [self.time_counter]*len(self.veh_ids[1:]))
+            self.add_to_eval_reward_data('input', rl_actions_list)
+            self.add_to_eval_reward_data('gap_error', [gap_error0, gap_error1, gap_error2, gap_error3, gap_error4])
+            self.add_to_eval_reward_data('speed_error', [speed_error0, speed_error1, speed_error2, speed_error3, speed_error4])
+            self.add_to_eval_reward_data('jerk', [jerk0, jerk1, jerk2, jerk3, jerk4])
+
         return rewards
 
     def get_state(self, **kwargs):
@@ -357,6 +461,24 @@ class UnilateralPlatoonEnv(PlatoonEnv):
 
         # accelerations are not updated at the start
         accelerations = [0 if accelerations[i] is None else accelerations[i] for i in range(len(self.veh_ids))]
+
+        # log state
+        if self.env_params.evaluate:
+            if self.last_time == self.time_counter:
+                self.last_time = -1
+            else:
+                self.add_to_eval_state_data('step', [self.time_counter]*len(self.veh_ids[1:]))
+                self.add_to_eval_state_data('speed', speeds[1:])
+                self.add_to_eval_state_data('accel', accelerations[1:])
+                self.add_to_eval_state_data('headway', headways)
+
+                self.add_to_eval_leader('step', self.time_counter)
+                self.add_to_eval_leader('accel', self.k.vehicle.get_realized_accel('leader_0'))
+                self.add_to_eval_leader('speed', speeds[0])
+                
+                self.last_time = self.time_counter
+            
+
 
         states = {
             self.veh_ids[1]: [-speeds[1] + speeds[0], gap_errors[0], accelerations[1], self.k.vehicle.get_realized_accel('leader_0')], # input accel differs from actual accel for leader
@@ -451,18 +573,18 @@ class BilateralPlatoonEnv(PlatoonEnv):
             crashed[veh_id] = veh_id in self.k.vehicle.get_arrived_rl_ids(self.env_params.sims_per_step)
 
         if self.mode == 'train':
-            reward_follower0 = reward_function_bilateral(headways[0], headways[1], speeds[0], speeds[1], speeds[2], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'], self.time_gap, self.standstill_distance)
+            reward_follower0= reward_function_bilateral(headways[0], headways[1], speeds[0], speeds[1], speeds[2], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'], self.time_gap, self.standstill_distance)
             reward_follower1 = reward_function_bilateral(headways[1], headways[2], speeds[1], speeds[2], speeds[3], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'], self.time_gap, self.standstill_distance)
             reward_follower2 = reward_function_bilateral(headways[2], headways[3], speeds[2], speeds[3], speeds[4], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'], self.time_gap, self.standstill_distance)
             reward_follower3 = reward_function_bilateral(headways[3], headways[4], speeds[3], speeds[4], speeds[5], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'], self.time_gap, self.standstill_distance)
-            reward_follower4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'], self.time_gap, self.standstill_distance)
+            reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'], self.time_gap, self.standstill_distance)
         
         elif self.mode == 'eval':
-            reward_follower0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'], self.time_gap, self.standstill_distance)
-            reward_follower1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'], self.time_gap, self.standstill_distance)
-            reward_follower2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'], self.time_gap, self.standstill_distance)
-            reward_follower3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'], self.time_gap, self.standstill_distance)
-            reward_follower4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'], self.time_gap, self.standstill_distance)
+            reward_follower0, gap_error0, speed_error0, jerk0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'], self.time_gap, self.standstill_distance)
+            reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'], self.time_gap, self.standstill_distance)
+            reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'], self.time_gap, self.standstill_distance)
+            reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'], self.time_gap, self.standstill_distance)
+            reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'], self.time_gap, self.standstill_distance)
         
         else:
             raise Exception("no valid reward mode")
@@ -652,6 +774,146 @@ class FlatbedEnv(PlatoonEnv):
             self.veh_ids[5]: [accelerations[5], speeds[5], speeds[4], headways[4], speeds[0]]
         }
 
+        return states
+    
+
+
+class PloegEnv(PlatoonEnv):
+
+    def __init__(self, env_params, sim_params, network, simulator='traci'):
+        super().__init__(env_params, sim_params, network, simulator)
+
+        self.standstill_distance = 2
+        self.time_gap = 1
+
+    @property
+    def observation_space(self):
+        """See class definition."""
+        return Box(
+            low=-1000000, ###########should be made reasonable
+            high=1000000, ###########should be made reasonable
+            shape=(5, ), ##########unilateral
+            dtype=np.float32)
+    
+
+    def compute_reward(self, rl_actions, **kwargs):
+        """Compute rewards for agents.
+        """
+
+        accelerations = [(0 if not isinstance(self.k.vehicle.get_arrived_ids(), int) and veh_id in self.k.vehicle.get_arrived_ids()
+                         else self.k.vehicle.get_accel(veh_id, noise=False, failsafe=False))
+                        for veh_id in self.veh_ids]
+        
+        headways = self.k.vehicle.get_headway(self.veh_ids[1:])
+        speeds = self.k.vehicle.get_speed(self.veh_ids)
+        previous_speeds = self.k.vehicle.get_previous_speed(self.veh_ids)
+        
+        for headway in headways:
+            if headway < 0 and not self.k.simulation.check_collision():
+                print("!!!!negative headway")
+                print(self.time_counter)
+                print(headways)
+                """
+                raise Exception
+                """
+            if headway == 1000:
+                print("!!!!!!default headway!!!!!!!!!")
+                print(self.time_counter)
+                raise Exception
+            
+        for i, speed in enumerate(speeds):
+            if speed < 0:
+                print("!!!negative speed!!!")
+                print(self.time_counter)
+                print(headways)
+                print(speeds)
+                raise Exception
+            if abs(speed - previous_speeds[i]) > 0.31 and self.time_counter != 0:
+                print("!!!!!!!!!!!!!!too high accel!!!!!!!!!!!!!!!!!!!!")
+                print(self.time_counter)
+                print(speed - previous_speeds[i])
+                print(accelerations)
+                raise Exception
+            """
+            if previous_speeds[i] == 0 and speed >= 0 and self.time_counter != 0:
+                print("!!!faulty emergency brake!!!")
+                print(self.time_counter)
+                print(speed)
+                print(previous_speeds[i])
+                raise Exception
+            """
+
+        crashed = {}
+        for veh_id in self.veh_ids[1:]:
+            crashed[veh_id] = veh_id in self.k.vehicle.get_arrived_rl_ids(self.env_params.sims_per_step)
+
+        
+        reward_follower0, gap_error0, speed_error0, jerk0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels['follower0_0'], crashed['follower0_0'], self.time_gap, self.standstill_distance)
+        reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels['follower1_0'], crashed['follower1_0'], self.time_gap, self.standstill_distance)
+        reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels['follower2_0'], crashed['follower2_0'], self.time_gap, self.standstill_distance)
+        reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels['follower3_0'], crashed['follower3_0'], self.time_gap, self.standstill_distance)
+        reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels['follower4_0'], crashed['follower4_0'], self.time_gap, self.standstill_distance)
+
+
+        # log eval data
+        if self.env_params.evaluate:
+            rl_actions_list = []
+            for veh_id in self.veh_ids[1:]:
+                rl_actions_list.append(rl_actions[veh_id][0])
+            
+            self.add_to_eval_reward_data('step', [self.time_counter]*len(self.veh_ids[1:]))
+            self.add_to_eval_reward_data('input', rl_actions_list)
+            self.add_to_eval_reward_data('gap_error', [gap_error0, gap_error1, gap_error2, gap_error3, gap_error4])
+            self.add_to_eval_reward_data('speed_error', [speed_error0, speed_error1, speed_error2, speed_error3, speed_error4])
+            self.add_to_eval_reward_data('jerk', [jerk0, jerk1, jerk2, jerk3, jerk4])
+
+
+        rewards = {self.veh_ids[1]: reward_follower0,
+                   self.veh_ids[2]: reward_follower1,
+                   self.veh_ids[3]: reward_follower2,
+                   self.veh_ids[4]: reward_follower3,
+                   self.veh_ids[5]: reward_follower4
+                   }
+
+        return rewards
+    
+
+    def get_state(self, **kwargs):
+
+        speeds = self.k.vehicle.get_speed(self.veh_ids)
+        accelerations = [(0 if not isinstance(self.k.vehicle.get_arrived_ids(), int) and veh_id in self.k.vehicle.get_arrived_ids()
+                         else self.k.vehicle.get_accel(veh_id, noise=False, failsafe=False))
+                        for veh_id in self.veh_ids]
+        headways = self.k.vehicle.get_headway(self.veh_ids[1:])
+
+        # accelerations are not updated at the start
+        accelerations = [0 if accelerations[i] is None else accelerations[i] for i in range(len(self.veh_ids))]
+
+        # log state
+        if self.env_params.evaluate:
+            if self.last_time == self.time_counter:
+                self.last_time = -1
+            else:
+                self.add_to_eval_state_data('step', [self.time_counter]*len(self.veh_ids[1:]))
+                self.add_to_eval_state_data('speed', speeds[1:])
+                self.add_to_eval_state_data('accel', accelerations[1:])
+                self.add_to_eval_state_data('headway', headways)
+
+                self.add_to_eval_leader('step', self.time_counter)
+                self.add_to_eval_leader('accel', self.k.vehicle.get_realized_accel('leader_0'))
+                self.add_to_eval_leader('speed', speeds[0])
+                
+                self.last_time = self.time_counter
+
+        states = {
+            self.veh_ids[1]: [speeds[1], speeds[0], accelerations[1], self.k.vehicle.get_realized_accel('leader_0'), headways[0]],
+            self.veh_ids[2]: [speeds[2], speeds[1], accelerations[2], accelerations[1], headways[1]],
+            self.veh_ids[3]: [speeds[3], speeds[2], accelerations[3], accelerations[2], headways[2]],
+            self.veh_ids[4]: [speeds[4], speeds[3], accelerations[4], accelerations[3], headways[3]],
+            self.veh_ids[5]: [speeds[5], speeds[4], accelerations[5], accelerations[4], headways[4]]
+        }
+
+        print(speeds)
         return states
     
 

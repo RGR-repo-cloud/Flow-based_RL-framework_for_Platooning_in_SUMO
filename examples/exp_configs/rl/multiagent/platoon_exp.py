@@ -10,7 +10,7 @@ from flow.core.params import SumoParams
 from flow.core.params import SumoCarFollowingParams
 from flow.core.params import VehicleParams
 from flow.networks.platoon_highway import ADDITIONAL_NET_PARAMS
-from flow.envs.multiagent import BilateralPlatoonEnv, UnilateralPlatoonEnv, FlatbedEnv
+from flow.envs.multiagent import BilateralPlatoonEnv, UnilateralPlatoonEnv, FlatbedEnv, PloegEnv
 from flow.networks import PlatoonHighwayNetwork
 from flow.networks import HighwayNetwork
 from flow.utils.registry import make_create_env
@@ -20,9 +20,9 @@ from ray.tune.registry import register_env
 # configurable parameters
 
 # seed for the environmental behaviour
-seed = 1
+seed = 8
 # type of control model environment: "UnilateralPlatoonEnv" or "BilateralPlatoonEnv"
-env_type = BilateralPlatoonEnv
+env_type = UnilateralPlatoonEnv
 # size of state's time frame
 state_time_frame = 4
 
