@@ -364,7 +364,7 @@ class Env(gym.Env, metaclass=ABCMeta):
                         veh_id).get_action(self)
                     accel.append(action)
                 self.k.vehicle.apply_acceleration(
-                    self.k.vehicle.get_controlled_ids(), accel)
+                    self.k.vehicle.get_controlled_ids(), accel, smooth=False)
 
             # perform lane change actions for controlled human-driven vehicles
             if len(self.k.vehicle.get_controlled_lc_ids()) > 0:
