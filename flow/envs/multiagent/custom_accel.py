@@ -59,8 +59,8 @@ class CustomAccelEnv(Env):
         """See class definition."""
         self.obs_var_labels = ['Velocity']
         return Box(
-            low=-1000000, ###########should be made reasonable
-            high=1000000, ###########should be made reasonable
+            low=-1000000, # an arbitrary high enough number
+            high=1000000, # an arbitrary high enough number
             shape=(1, ),
             dtype=np.float32)
 

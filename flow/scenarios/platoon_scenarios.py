@@ -257,7 +257,7 @@ class StaticSinusoidalScenario(StaticScenario):
         self.start_time = 50
         self.amplitude = 3
         self.period = 100
-        #self.period = 200 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #self.period = 200
 
 
     def get_accel(self, step, speed):
