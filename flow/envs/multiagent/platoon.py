@@ -311,11 +311,11 @@ class UnilateralPlatoonEnv(PlatoonEnv):
 
         if self.mode == 'train':
             # calculate training rewards
-            reward_follower0, gap_error0, speed_error0, jerk0  = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels[self.veh_ids[1]], rl_actions[self.veh_ids[1]][0], self.time_gap, self.standstill_distance)
-            reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels[self.veh_ids[2]], rl_actions[self.veh_ids[2]][0], self.time_gap, self.standstill_distance)
-            reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels[self.veh_ids[3]], rl_actions[self.veh_ids[3]][0], self.time_gap, self.standstill_distance)
-            reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels[self.veh_ids[4]], rl_actions[self.veh_ids[4]][0], self.time_gap, self.standstill_distance)
-            reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels[self.veh_ids[5]], rl_actions[self.veh_ids[5]][0], self.time_gap, self.standstill_distance)
+            reward_follower0, gap_error0, speed_error0, jerk0  = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels[self.veh_ids[1]], self.time_gap, self.standstill_distance)
+            reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels[self.veh_ids[2]], self.time_gap, self.standstill_distance)
+            reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels[self.veh_ids[3]], self.time_gap, self.standstill_distance)
+            reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels[self.veh_ids[4]], self.time_gap, self.standstill_distance)
+            reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels[self.veh_ids[5]], self.time_gap, self.standstill_distance)
             
             if self.env_params.additional_params['modified_reward_function']:
                 reward_follower0 = mod_reward_function(reward_follower0, crashed[self.veh_ids[1]])
@@ -326,11 +326,11 @@ class UnilateralPlatoonEnv(PlatoonEnv):
 
         elif self.mode == 'eval':
             # calculate evaluation rewards
-            reward_follower0, gap_error0, speed_error0, jerk0  = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels[self.veh_ids[1]], rl_actions[self.veh_ids[1]][0], self.time_gap, self.standstill_distance)
-            reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels[self.veh_ids[2]], rl_actions[self.veh_ids[2]][0], self.time_gap, self.standstill_distance)
-            reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels[self.veh_ids[3]], rl_actions[self.veh_ids[3]][0], self.time_gap, self.standstill_distance)
-            reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels[self.veh_ids[4]], rl_actions[self.veh_ids[4]][0], self.time_gap, self.standstill_distance)
-            reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels[self.veh_ids[5]], rl_actions[self.veh_ids[5]][0], self.time_gap, self.standstill_distance)
+            reward_follower0, gap_error0, speed_error0, jerk0  = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels[self.veh_ids[1]], self.time_gap, self.standstill_distance)
+            reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels[self.veh_ids[2]], self.time_gap, self.standstill_distance)
+            reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels[self.veh_ids[3]], self.time_gap, self.standstill_distance)
+            reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels[self.veh_ids[4]], self.time_gap, self.standstill_distance)
+            reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels[self.veh_ids[5]], self.time_gap, self.standstill_distance)
         else:
             raise Exception("no valid reward mode")
 
@@ -463,11 +463,11 @@ class BilateralPlatoonEnv(PlatoonEnv):
 
         if self.mode == 'train':
             # compute training rewards
-            reward_follower0 = reward_function_bilateral(headways[0], headways[1], speeds[0], speeds[1], speeds[2], accelerations[1], self.previous_accels[self.veh_ids[1]], rl_actions[self.veh_ids[1]][0], self.time_gap, self.standstill_distance)
-            reward_follower1 = reward_function_bilateral(headways[1], headways[2], speeds[1], speeds[2], speeds[3], accelerations[2], self.previous_accels[self.veh_ids[2]], rl_actions[self.veh_ids[2]][0], self.time_gap, self.standstill_distance)
-            reward_follower2 = reward_function_bilateral(headways[2], headways[3], speeds[2], speeds[3], speeds[4], accelerations[3], self.previous_accels[self.veh_ids[3]], rl_actions[self.veh_ids[3]][0], self.time_gap, self.standstill_distance)
-            reward_follower3 = reward_function_bilateral(headways[3], headways[4], speeds[3], speeds[4], speeds[5], accelerations[4], self.previous_accels[self.veh_ids[4]], rl_actions[self.veh_ids[4]][0], self.time_gap, self.standstill_distance)
-            reward_follower4,_,_,_ = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels[self.veh_ids[5]], rl_actions[self.veh_ids[5]][0], self.time_gap, self.standstill_distance)
+            reward_follower0 = reward_function_bilateral(headways[0], headways[1], speeds[0], speeds[1], speeds[2], accelerations[1], self.previous_accels[self.veh_ids[1]], self.time_gap, self.standstill_distance)
+            reward_follower1 = reward_function_bilateral(headways[1], headways[2], speeds[1], speeds[2], speeds[3], accelerations[2], self.previous_accels[self.veh_ids[2]], self.time_gap, self.standstill_distance)
+            reward_follower2 = reward_function_bilateral(headways[2], headways[3], speeds[2], speeds[3], speeds[4], accelerations[3], self.previous_accels[self.veh_ids[3]], self.time_gap, self.standstill_distance)
+            reward_follower3 = reward_function_bilateral(headways[3], headways[4], speeds[3], speeds[4], speeds[5], accelerations[4], self.previous_accels[self.veh_ids[4]], self.time_gap, self.standstill_distance)
+            reward_follower4,_,_,_ = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels[self.veh_ids[5]], self.time_gap, self.standstill_distance)
 
             if self.env_params.additional_params['modified_reward_function']:
                 reward_follower0 = mod_reward_function(reward_follower0, crashed[self.veh_ids[1]])
@@ -478,11 +478,11 @@ class BilateralPlatoonEnv(PlatoonEnv):
         
         elif self.mode == 'eval':
             # compute evaluation rewards
-            reward_follower0, gap_error0, speed_error0, jerk0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels[self.veh_ids[1]], rl_actions[self.veh_ids[1]][0], self.time_gap, self.standstill_distance)
-            reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels[self.veh_ids[2]], rl_actions[self.veh_ids[2]][0], self.time_gap, self.standstill_distance)
-            reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels[self.veh_ids[3]], rl_actions[self.veh_ids[3]][0], self.time_gap, self.standstill_distance)
-            reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels[self.veh_ids[4]], rl_actions[self.veh_ids[4]][0], self.time_gap, self.standstill_distance)
-            reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels[self.veh_ids[5]], rl_actions[self.veh_ids[5]][0], self.time_gap, self.standstill_distance)
+            reward_follower0, gap_error0, speed_error0, jerk0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels[self.veh_ids[1]], self.time_gap, self.standstill_distance)
+            reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels[self.veh_ids[2]], self.time_gap, self.standstill_distance)
+            reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels[self.veh_ids[3]], self.time_gap, self.standstill_distance)
+            reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels[self.veh_ids[4]], self.time_gap, self.standstill_distance)
+            reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels[self.veh_ids[5]], self.time_gap, self.standstill_distance)
         
         else:
             raise Exception("no valid reward mode")
@@ -599,11 +599,11 @@ class FlatbedEnv(PlatoonEnv):
             crashed[veh_id] = veh_id in self.k.vehicle.get_arrived_rl_ids(self.env_params.sims_per_step)
 
         # compute rewards
-        reward_follower0, gap_error0, speed_error0, jerk0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels[self.veh_ids[1]], rl_actions[self.veh_ids[1]][0], self.time_gap, self.standstill_distance)
-        reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels[self.veh_ids[2]], rl_actions[self.veh_ids[2]][0], self.time_gap, self.standstill_distance)
-        reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels[self.veh_ids[3]], rl_actions[self.veh_ids[3]][0], self.time_gap, self.standstill_distance)
-        reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels[self.veh_ids[4]], rl_actions[self.veh_ids[4]][0], self.time_gap, self.standstill_distance)
-        reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels[self.veh_ids[5]], rl_actions[self.veh_ids[5]][0], self.time_gap, self.standstill_distance)
+        reward_follower0, gap_error0, speed_error0, jerk0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels[self.veh_ids[1]], self.time_gap, self.standstill_distance)
+        reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels[self.veh_ids[2]], self.time_gap, self.standstill_distance)
+        reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels[self.veh_ids[3]], self.time_gap, self.standstill_distance)
+        reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels[self.veh_ids[4]], self.time_gap, self.standstill_distance)
+        reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels[self.veh_ids[5]], self.time_gap, self.standstill_distance)
 
         # log evaluation data
         if self.env_params.evaluate:
@@ -702,11 +702,11 @@ class PloegEnv(PlatoonEnv):
             crashed[veh_id] = veh_id in self.k.vehicle.get_arrived_rl_ids(self.env_params.sims_per_step)
 
         # compute rewards
-        reward_follower0, gap_error0, speed_error0, jerk0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels[self.veh_ids[1]], rl_actions[self.veh_ids[1]][0], self.time_gap, self.standstill_distance)
-        reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels[self.veh_ids[2]], rl_actions[self.veh_ids[2]][0], self.time_gap, self.standstill_distance)
-        reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels[self.veh_ids[3]], rl_actions[self.veh_ids[3]][0], self.time_gap, self.standstill_distance)
-        reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels[self.veh_ids[4]], rl_actions[self.veh_ids[4]][0], self.time_gap, self.standstill_distance)
-        reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels[self.veh_ids[5]], rl_actions[self.veh_ids[5]][0], self.time_gap, self.standstill_distance)
+        reward_follower0, gap_error0, speed_error0, jerk0 = reward_function_unilateral(headways[0], speeds[0], speeds[1], accelerations[1], self.previous_accels[self.veh_ids[1]], self.time_gap, self.standstill_distance)
+        reward_follower1, gap_error1, speed_error1, jerk1 = reward_function_unilateral(headways[1], speeds[1], speeds[2], accelerations[2], self.previous_accels[self.veh_ids[2]], self.time_gap, self.standstill_distance)
+        reward_follower2, gap_error2, speed_error2, jerk2 = reward_function_unilateral(headways[2], speeds[2], speeds[3], accelerations[3], self.previous_accels[self.veh_ids[3]], self.time_gap, self.standstill_distance)
+        reward_follower3, gap_error3, speed_error3, jerk3 = reward_function_unilateral(headways[3], speeds[3], speeds[4], accelerations[4], self.previous_accels[self.veh_ids[4]], self.time_gap, self.standstill_distance)
+        reward_follower4, gap_error4, speed_error4, jerk4 = reward_function_unilateral(headways[4], speeds[4], speeds[5], accelerations[5], self.previous_accels[self.veh_ids[5]], self.time_gap, self.standstill_distance)
             
         rewards = {self.veh_ids[1]: reward_follower0,
                    self.veh_ids[2]: reward_follower1,
