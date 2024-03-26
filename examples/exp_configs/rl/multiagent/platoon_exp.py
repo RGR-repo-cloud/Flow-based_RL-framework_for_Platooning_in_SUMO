@@ -20,11 +20,13 @@ from ray.tune.registry import register_env
 # configurable parameters
 
 # seed for the environmental behaviour
-seed = 8
+seed = 1
 # type of control model environment: "UnilateralPlatoonEnv" or "BilateralPlatoonEnv"
 env_type = UnilateralPlatoonEnv
 # size of state's time frame
-state_time_frame = 4
+state_time_frame = 1
+# use a modified variant of the original reward function for training
+modified_reward_function = False
 
 ####################################################################
 
@@ -142,7 +144,8 @@ flow_params = dict(
             'max_accel': 3,
             'max_decel': 3,
             'num_scenarios':6,
-            'state_time_frame': state_time_frame
+            'state_time_frame': state_time_frame,
+            'modified_reward_function': modified_reward_function
         },
     ),
 
