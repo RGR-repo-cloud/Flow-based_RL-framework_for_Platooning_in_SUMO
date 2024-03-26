@@ -21,7 +21,7 @@ ADDITIONAL_ENV_PARAMS = {
     }
 
 
-def reward_function_bilateral(headway_front, headway_rear, speed_front, speed_self, speed_rear, accel, previous_accel,control_input, time_gap, standstill_distance):
+def reward_function_bilateral(headway_front, headway_rear, speed_front, speed_self, speed_rear, accel, previous_accel, time_gap, standstill_distance):
 
     max_gap_error = 15
     max_speed_error = 10
@@ -40,7 +40,7 @@ def reward_function_bilateral(headway_front, headway_rear, speed_front, speed_se
     normed_gap_error_rear = abs(gap_error_rear / max_gap_error)
     normed_speed_error_front = abs(speed_error_front / max_speed_error)
     normed_speed_error_rear = abs(speed_error_rear / max_speed_error)
-    normed_input_penalty = abs((control_input / max_accel))
+    normed_input_penalty = abs((accel / max_accel))
     normed_jerk = abs(jerk / (2 * max_accel))
 
     weight_a = 0.1
@@ -58,7 +58,7 @@ def reward_function_bilateral(headway_front, headway_rear, speed_front, speed_se
                     )
     sqr_reward = -(pow(gap_error_front, 2) + 
                     (weight_a * pow(speed_error_front, 2)) + 
-                    (weight_b * pow(control_input, 2)) +
+                    (weight_b * pow(accel, 2)) +
                     (weight_c * pow(jerk, 2)) +
                     (weight_d * pow(gap_error_rear, 2)) +
                     (weight_e * pow(speed_error_rear, 2)))
@@ -73,7 +73,7 @@ def reward_function_bilateral(headway_front, headway_rear, speed_front, speed_se
     return reward
     
 
-def reward_function_unilateral(headway, speed_front, speed_self, accel, previous_accel, control_input, time_gap, standstill_distance):
+def reward_function_unilateral(headway, speed_front, speed_self, accel, previous_accel, time_gap, standstill_distance):
     
     max_gap_error = 15
     max_speed_error = 10
@@ -87,7 +87,7 @@ def reward_function_unilateral(headway, speed_front, speed_self, accel, previous
 
     normed_gap_error = abs(gap_error / max_gap_error)
     normed_speed_error = abs(speed_error / max_speed_error)
-    normed_input_penalty = abs((control_input / max_accel))
+    normed_input_penalty = abs((accel / max_accel))
     normed_jerk = abs(jerk / (2 * max_accel / time_step))
 
 
@@ -101,7 +101,7 @@ def reward_function_unilateral(headway, speed_front, speed_self, accel, previous
                     (weight_c * normed_jerk))
     sqr_reward = -(pow(gap_error, 2) + 
                     (weight_a * pow(speed_error, 2)) + 
-                    (weight_b * pow(control_input, 2)) +
+                    (weight_b * pow(accel, 2)) +
                     (weight_c * pow(jerk * time_step, 2)))
 
     epsilon = -0.4483
