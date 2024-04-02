@@ -388,7 +388,7 @@ class UnilateralPlatoonEnv(PlatoonEnv):
                 self.add_to_eval_state_data('headway', headways)
 
                 self.add_to_eval_leader('step', self.time_counter)
-                self.add_to_eval_leader('accel', self.k.vehicle.get_realized_accel('leader_0'))
+                self.add_to_eval_leader('accel', accelerations[0])
                 self.add_to_eval_leader('speed', speeds[0])
                 
                 self.last_time = self.time_counter
@@ -396,7 +396,7 @@ class UnilateralPlatoonEnv(PlatoonEnv):
 
         # current states
         states = {
-            self.veh_ids[1]: [-speeds[1] + speeds[0], gap_errors[0], accelerations[1], self.k.vehicle.get_realized_accel('leader_0')],
+            self.veh_ids[1]: [-speeds[1] + speeds[0], gap_errors[0], accelerations[1], accelerations[0]],
             self.veh_ids[2]: [-speeds[2] + speeds[1], gap_errors[1], accelerations[2], accelerations[1]],
             self.veh_ids[3]: [-speeds[3] + speeds[2], gap_errors[2], accelerations[3], accelerations[2]],
             self.veh_ids[4]: [-speeds[4] + speeds[3], gap_errors[3], accelerations[4], accelerations[3]],
@@ -541,14 +541,14 @@ class BilateralPlatoonEnv(PlatoonEnv):
                 self.add_to_eval_state_data('headway', headways)
 
                 self.add_to_eval_leader('step', self.time_counter)
-                self.add_to_eval_leader('accel', self.k.vehicle.get_realized_accel('leader_0'))
+                self.add_to_eval_leader('accel', accelerations[0])
                 self.add_to_eval_leader('speed', speeds[0])
                 
                 self.last_time = self.time_counter
 
         # current states
         states = {
-            self.veh_ids[1]: [-speeds[1] + speeds[0], -speeds[1] + speeds[2], gap_errors[0], gap_errors[1], accelerations[1], self.k.vehicle.get_realized_accel('leader_0'), accelerations[2]], 
+            self.veh_ids[1]: [-speeds[1] + speeds[0], -speeds[1] + speeds[2], gap_errors[0], gap_errors[1], accelerations[1], accelerations[0], accelerations[2]], 
             self.veh_ids[2]: [-speeds[2] + speeds[1], -speeds[2] + speeds[3], gap_errors[1], gap_errors[2], accelerations[2], accelerations[1], accelerations[3]],
             self.veh_ids[3]: [-speeds[3] + speeds[2], -speeds[3] + speeds[4], gap_errors[2], gap_errors[3], accelerations[3], accelerations[2], accelerations[4]],
             self.veh_ids[4]: [-speeds[4] + speeds[3], -speeds[4] + speeds[5], gap_errors[3], gap_errors[4], accelerations[4], accelerations[3], accelerations[5]],
@@ -650,7 +650,7 @@ class FlatbedEnv(PlatoonEnv):
                 self.add_to_eval_state_data('headway', headways)
 
                 self.add_to_eval_leader('step', self.time_counter)
-                self.add_to_eval_leader('accel', self.k.vehicle.get_realized_accel('leader_0'))
+                self.add_to_eval_leader('accel', accelerations[0])
                 self.add_to_eval_leader('speed', speeds[0])
                 
                 self.last_time = self.time_counter
@@ -759,13 +759,13 @@ class PloegEnv(PlatoonEnv):
                 self.add_to_eval_state_data('headway', headways)
 
                 self.add_to_eval_leader('step', self.time_counter)
-                self.add_to_eval_leader('accel', self.k.vehicle.get_realized_accel('leader_0'))
+                self.add_to_eval_leader('accel', accelerations[0])
                 self.add_to_eval_leader('speed', speeds[0])
                 
                 self.last_time = self.time_counter
 
         states = {
-            self.veh_ids[1]: [speeds[1], speeds[0], accelerations[1], self.k.vehicle.get_realized_accel('leader_0'), headways[0]],
+            self.veh_ids[1]: [speeds[1], speeds[0], accelerations[1], accelerations[0], headways[0]],
             self.veh_ids[2]: [speeds[2], speeds[1], accelerations[2], accelerations[1], headways[1]],
             self.veh_ids[3]: [speeds[3], speeds[2], accelerations[3], accelerations[2], headways[2]],
             self.veh_ids[4]: [speeds[4], speeds[3], accelerations[4], accelerations[3], headways[3]],
